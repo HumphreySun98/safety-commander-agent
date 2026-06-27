@@ -73,14 +73,19 @@ def create_safety_log(judgment) -> dict:
 
 
 def notify_supervisor(judgment, channel="dashboard") -> dict:
-    """Notify the shift supervisor (prints + persists; optional Discord webhook)."""
+    """Notify the shift supervisor: prints + persists + sends to Slack (and/or Discord)
+    if a webhook is configured. A webhook failure never breaks the loop."""
     rec = _base(judgment, "notify_supervisor")
     rec["channel"] = channel
     rec["message"] = (f"[{str(judgment.get('risk_level','')).upper()}] "
                       f"{judgment.get('hazard_type')} — {judgment.get('observation')}")
+    sent = _post_webhooks(judgment, rec["message"])
+    rec["slack_sent"] = bool(sent.get("slack"))
+    rec["discord_sent"] = bool(sent.get("discord"))
     _append(NOTIFICATIONS, rec)
     print(f"  📣 notify_super   {rec['message']}")
-    _maybe_discord(rec["message"])
+    if rec["slack_sent"]:
+        print("  💬 slack          alert delivered")
     return rec
 
 
@@ -118,15 +123,52 @@ def flag_area(judgment) -> dict:
     return rec
 
 
-def _maybe_discord(message):
-    url = config.DISCORD_WEBHOOK_URL
-    if not url:
-        return
+_RISK_COLOR = {"none": "#6b7280", "low": "#22c55e", "medium": "#eab308",
+               "high": "#f97316", "critical": "#ef4444"}
+
+
+def _post(url, payload):
+    """POST a webhook payload. Never raises; returns True on 2xx."""
     try:
         import requests
-        requests.post(url, json={"content": f"**SafetyCommander** {message}"}, timeout=5)
+        r = requests.post(url, json=payload, timeout=6)
+        if not (200 <= r.status_code < 300):
+            print(f"  (webhook {r.status_code}: {str(r.text)[:80]})")
+            return False
+        return True
     except Exception as e:
-        print(f"  (discord webhook failed: {e})")
+        print(f"  (webhook failed: {e})")
+        return False
+
+
+def _post_webhooks(judgment, message) -> dict:
+    """Send the supervisor alert to Slack (rich, colour-coded) and/or Discord, if
+    configured. Returns {'slack': bool, 'discord': bool}. Safe no-op when unset."""
+    sent = {}
+    risk = str(judgment.get("risk_level", "")).lower()
+    color = _RISK_COLOR.get(risk, "#6b7280")
+
+    if config.SLACK_WEBHOOK_URL:
+        acts = "; ".join(judgment.get("recommended_actions") or []) or "—"
+        payload = {
+            "text": f"[{risk.upper()}] {judgment.get('hazard_type')} @ {judgment.get('frame')}",
+            "attachments": [{
+                "color": color,
+                "title": f"⚠ {risk.upper()} — {judgment.get('hazard_type')}",
+                "text": (f"*Observation:* {judgment.get('observation', '')}\n"
+                         f"*Policy clause:* {judgment.get('policy_clause', '')}\n"
+                         f"*Recommended:* {acts}"),
+                "footer": (f"SafetyCommander · {judgment.get('frame', '')}"
+                           f" · {judgment.get('zone', '')}"),
+                "mrkdwn_in": ["text"],
+            }],
+        }
+        sent["slack"] = _post(config.SLACK_WEBHOOK_URL, payload)
+
+    if config.DISCORD_WEBHOOK_URL:
+        sent["discord"] = _post(config.DISCORD_WEBHOOK_URL,
+                                {"content": f"**SafetyCommander** [{risk.upper()}] {message}"})
+    return sent
 
 
 # --- the router -----------------------------------------------------------------

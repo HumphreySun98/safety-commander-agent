@@ -36,7 +36,8 @@ VLM_MAX_TOKENS     = int(os.getenv("VLM_MAX_TOKENS", "800"))
 VLM_TEMPERATURE    = float(os.getenv("VLM_TEMPERATURE", "0.0"))  # 0 = reproducible verdicts
 
 # --- Optional integrations ------------------------------------------------------
-DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
+SLACK_WEBHOOK_URL   = os.getenv("SLACK_WEBHOOK_URL", "")    # supervisor alerts -> Slack
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")  # fallback channel
 
 # Make sure output dirs exist.
 LOGS_DIR.mkdir(exist_ok=True)
