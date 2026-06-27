@@ -297,17 +297,12 @@ def _annotate(image_path, detections, out_path, pair=None):
     return out_path
 
 
-# --- the public entry points ------------------------------------------------
+# --- detection core (shared) ------------------------------------------------
 
-def detect_frame(image_path) -> dict:
-    """Run detection on ONE frame; return a perception dict shaped like EXAMPLE.
-
-    Facts only — counts, boxes, distances, PPE/hazard booleans. The VLM
-    (vlm_judge.py) decides the risk level from safety_policy.txt; nothing here does.
-    """
+def _detect(image_path):
+    """Run every active model on ONE frame, map to LABELS, apply per-label
+    confidence + cross-model NMS. Returns (detections, capabilities). Facts only."""
     models, caps = _load_models()
-    frame_name = Path(image_path).name
-
     detections = []
     for model, name_map in models:
         r = model(str(image_path), conf=CONF_THRES, verbose=False)[0]
@@ -325,8 +320,20 @@ def detect_frame(image_path) -> dict:
                 "bbox": [round(x1), round(y1), round(x2 - x1), round(y2 - y1)],
                 "conf": round(conf, 2),
             })
-    detections = _dedup(detections)
+    return _dedup(detections), caps
 
+
+# --- the public entry points ------------------------------------------------
+
+def detect_frame(image_path) -> dict:
+    """Run detection on ONE frame; return a perception dict shaped like EXAMPLE,
+    and write its annotated frame to frames_annotated/.
+
+    Facts only — counts, boxes, distances, PPE/hazard booleans. The VLM
+    (vlm_judge.py) decides the risk level from safety_policy.txt; nothing here does.
+    """
+    frame_name = Path(image_path).name
+    detections, caps = _detect(image_path)
     derived = compute_derived(detections, caps)
 
     pair = _nearest_person_forklift(detections)   # (dist_m, person, forklift)
@@ -339,6 +346,40 @@ def detect_frame(image_path) -> dict:
         "detections": detections,
         "derived": derived,
         "annotated_image": annotated_rel if annotated else None,
+    }
+
+
+def detect_for_frame(image, annotate_to=None) -> dict:
+    """Detect on ONE frame (used by main.py's VIDEO loop on each window's
+    representative frame) and return DETECTOR FACTS in the perception.EXAMPLE
+    schema (detections + derived). If `annotate_to` is given, draw the boxes +
+    person<->forklift distance line/label onto that image and overwrite-save it.
+
+    Facts only — never a risk level. Robust by design: if models/weights are
+    missing it returns the capability-gated subset it can measure and never
+    raises (the video loop must not crash on a perception hiccup)."""
+    frame_name = Path(image).name
+    try:
+        detections, caps = _detect(image)
+    except Exception as e:
+        print(f"  (perception.detect_for_frame: detection unavailable: {e})")
+        detections, caps = [], set()
+
+    derived = compute_derived(detections, caps)
+    pair = _nearest_person_forklift(detections)
+
+    annotated_ok = False
+    if annotate_to:
+        try:
+            annotated_ok = bool(_annotate(image, detections, annotate_to, pair=pair))
+        except Exception as e:
+            print(f"  (perception.detect_for_frame: annotate failed: {e})")
+
+    return {
+        "frame": frame_name,
+        "detections": detections,
+        "derived": derived,
+        "annotated_image": str(annotate_to) if annotated_ok else None,
     }
 
 
