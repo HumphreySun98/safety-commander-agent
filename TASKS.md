@@ -46,8 +46,7 @@ operations managers. Owners: **A = repo owner (agent/demo)**, **B = 4090 teammat
 ## 2. To do
 
 ### One-time setup
-- [ ] **[A]** Add B as collaborator:
-      `gh api --method PUT repos/HumphreySun98/safety-commander-agent/collaborators/<B> -f permission=push`
+- [x] **[A]** Add B as collaborator (lynn added).
 - [ ] **[A]** Send `VLLM_KEY` to B privately (not in git).
 - [ ] **[B]** Clone, `pip install -r requirements.txt ultralytics`, create `.env`, get datasets.
 - [ ] **[A]** (optional) Get a free Roboflow API key for clear-hazard frames + eval.
@@ -56,8 +55,9 @@ operations managers. Owners: **A = repo owner (agent/demo)**, **B = 4090 teammat
 - [ ] **[B]** Implement `perception.detect_frame()` + train/run YOLO on the Roboflow sets;
       write `perception/*.json` + `frames_annotated/*.jpg` for every frame in `frames/`.
       (See `PERCEPTION.md`. Facts only — no risk levels.)
-- [ ] **[A]** **"Edit policy → re-judge → verdict flips" live demo** (scripted, reliable) —
-      the proof that the *model* reasons, not the code. (Judging #2.)
+- [x] **[A]** **"Edit policy → verdict flips" demo** → `demo_policy_flip.py` (reliable, ~10s):
+      forklift overload, NONE → MEDIUM by adding clause 2.6, model cites the new clause.
+      Verified 3/3 each side. (Judging #2 — the climax.)
 - [ ] **[A]** **Slack webhook** for `notify_supervisor` (visible real integration → pillar ②).
 - [ ] **[A]** Dashboard polish for the big screen (font sizes, layout at demo resolution).
 - [ ] **[both]** Pitch deck (~5 slides) + **3-minute run-of-show** + who-says-what.
