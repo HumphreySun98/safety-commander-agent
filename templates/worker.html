@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>SafetyCommander · 员工端</title>
+<style>
+  :root{--bg:#0b0e13;--panel:#141923;--panel2:#1b2230;--line:#252d3b;--txt:#e6eaf0;--muted:#8a94a6;
+    --accent:#7c5cff;--none:#6b7280;--low:#22c55e;--medium:#eab308;--high:#f97316;--critical:#ef4444;}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  header{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);background:#0d1117}
+  header h1{font-size:18px;margin:0} .sp{flex:1}
+  a.back{color:var(--muted);text-decoration:none;font-size:13px}
+  .wrap{max-width:760px;margin:0 auto;padding:18px 16px 60px}
+  .status{border-radius:14px;padding:22px;margin-bottom:18px;color:#0b0e13;font-weight:800}
+  .status .lvl{font-size:13px;letter-spacing:1px}
+  .status .hz{font-size:26px;margin:4px 0}
+  .status .act{font-weight:600;font-size:14px;opacity:.9}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:22px 0 10px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:10px 0}
+  .alert{border-left:4px solid var(--high)}
+  .alert .h{font-weight:700} .alert .c{color:#a99bff;font-size:13px;margin-top:4px}
+  .todo{display:flex;gap:10px;align-items:flex-start} .todo .box{margin-top:3px}
+  .muted{color:var(--muted)} .focus{background:rgba(124,92,255,.10);border:1px solid rgba(124,92,255,.35)}
+  .empty{color:var(--muted);font-size:14px;padding:6px 0}
+</style></head>
+<body>
+<header><h1>👷 SafetyCommander · 员工端</h1><div class="sp"></div>
+  <a class="back" href="/">← 切换视图</a></header>
+<div class="wrap">
+  <div class="status" id="status" style="background:#6b7280">
+    <div class="lvl">CURRENT FLOOR STATUS</div><div class="hz">— </div><div class="act"></div>
+  </div>
+
+  <h2>⚠ 需要你注意 · alerts to act on</h2>
+  <div id="alerts"><div class="empty">No active high-risk alerts.</div></div>
+
+  <h2>📋 我的整改任务 · your corrective actions</h2>
+  <div id="todo"><div class="empty">Loading…</div></div>
+
+  <h2>📅 今日安全重点 · today's focus</h2>
+  <div class="card focus" id="focus"><div class="empty">Loading…</div></div>
+</div>
+<script>
+const C={none:'#6b7280',low:'#22c55e',medium:'#eab308',high:'#f97316',critical:'#ef4444'};
+const esc=s=>(s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+async function j(u){try{return await (await fetch(u)).json()}catch(e){return null}}
+async function t(u){try{return await (await fetch(u)).text()}catch(e){return ''}}
+
+async function tick(){
+  const s=await j('/api/state');
+  if(s&&s.latest){
+    const v=s.latest, lvl=String(v.risk_level||'none').toLowerCase(), c=C[lvl]||'#6b7280';
+    const box=document.getElementById('status'); box.style.background=c;
+    box.querySelector('.hz').textContent = lvl==='none'?'✓ All clear':esc(v.hazard_type);
+    box.querySelector('.lvl').textContent = lvl==='none'?'CURRENT FLOOR STATUS · CLEAR':('CURRENT FLOOR STATUS · '+lvl.toUpperCase());
+    box.querySelector('.act').textContent = lvl==='none'?'':('Action: '+ ((v.recommended_actions||[])[0]||'follow the cited policy'));
+    // active alerts = recent high/critical
+    const evs=(s.events||[]).filter(e=>['high','critical'].includes(String(e.judgment.risk_level).toLowerCase())).slice(-5).reverse();
+    document.getElementById('alerts').innerHTML = evs.length? evs.map(e=>{
+      const jd=e.judgment;return `<div class="card alert" style="border-left-color:${C[jd.risk_level]||'#f97316'}">
+        <div class="h">${esc(jd.risk_level).toUpperCase()} · ${esc(jd.hazard_type)}</div>
+        <div>${esc(jd.observation)}</div><div class="c">▸ ${esc(jd.policy_clause)}</div></div>`;
+    }).join('') : '<div class="empty">No active high-risk alerts. ✅</div>';
+  }
+  // my corrective actions
+  const ca=await j('/api/correctives');
+  document.getElementById('todo').innerHTML = (ca&&ca.length)? ca.slice(0,8).map(c=>
+    `<div class="card todo"><input type="checkbox" class="box"><div><b>${esc(c.hazard)}</b>
+      <div class="muted">${esc(c.instruction)}</div></div></div>`).join('')
+    : '<div class="empty">No open corrective actions assigned. ✅</div>';
+  // today's focus from the weekly plan
+  const plan=await t('/api/plan');
+  const focus=(plan.match(/Focus this week:\*\*\s*(.+)/)||[])[1];
+  const items=[...plan.matchAll(/^## (.+)$/gm)].slice(0,4).map(m=>m[1]);
+  document.getElementById('focus').innerHTML = focus?
+    (`<b>${esc(focus)}</b>`+(items.length?'<ul style="margin:8px 0 0;padding-left:18px">'+items.map(i=>`<li>${esc(i)}</li>`).join('')+'</ul>':''))
+    : '<div class="empty">No plan yet (run planner.py).</div>';
+}
+setInterval(tick,2500); tick();
+</script>
+</body></html>

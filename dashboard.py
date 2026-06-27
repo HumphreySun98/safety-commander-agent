@@ -16,11 +16,16 @@ from pathlib import Path
 from flask import Flask, jsonify, send_from_directory, Response
 
 import config
+import kpi_report
 from main import run_shift, run_video, run_videos, DEFAULT_CONTEXT, VIDEO_CONTEXT, VIDEO_EXT
 
 app = Flask(__name__)
 
-TEMPLATE = Path(__file__).resolve().parent / "templates" / "index.html"
+TPL_DIR = Path(__file__).resolve().parent / "templates"
+
+
+def _tpl(name):
+    return Response((TPL_DIR / name).read_text(encoding="utf-8"), mimetype="text/html")
 
 _state_lock = threading.Lock()
 _thread = None
@@ -96,8 +101,23 @@ def start_shift():
 
 
 @app.get("/")
-def index():
-    return Response(TEMPLATE.read_text(encoding="utf-8"), mimetype="text/html")
+def home():
+    return _tpl("chooser.html")        # role selector: 员工端 / 管理端
+
+
+@app.get("/worker")
+def worker():
+    return _tpl("worker.html")         # frontline view
+
+
+@app.get("/manager")
+def manager():
+    return _tpl("manager.html")        # operations / safety-manager console
+
+
+@app.get("/monitor")
+def monitor():
+    return _tpl("index.html")          # the live real-time monitor (unchanged)
 
 
 @app.get("/frames/<path:filename>")
@@ -126,6 +146,24 @@ def api_report():
     with _state_lock:
         return Response(STATE.get("report_md") or "Report not ready yet.",
                         mimetype="text/plain")
+
+
+@app.get("/api/kpi")
+def api_kpi():
+    return jsonify(kpi_report.summarize())          # MONTH roll-up stats
+
+
+@app.get("/api/correctives")
+def api_correctives():
+    return jsonify(kpi_report.summarize().get("open_correctives", []))
+
+
+@app.get("/api/plan")
+def api_plan():
+    p = config.REPORTS_DIR / "weekly_plan.md"
+    txt = p.read_text(encoding="utf-8") if p.exists() else \
+        "No weekly plan yet. Generate it with:  python planner.py"
+    return Response(txt, mimetype="text/plain")
 
 
 if __name__ == "__main__":

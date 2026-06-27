@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>SafetyCommander · 管理端</title>
+<style>
+  :root{--bg:#0b0e13;--panel:#141923;--panel2:#1b2230;--line:#252d3b;--txt:#e6eaf0;--muted:#8a94a6;
+    --accent:#7c5cff;--high:#f97316;--critical:#ef4444;--ok:#22c55e;}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  header{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:#0d1117;position:sticky;top:0;z-index:5}
+  header h1{font-size:18px;margin:0} .sp{flex:1}
+  a.btn{background:var(--accent);color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600}
+  a.back{color:var(--muted);text-decoration:none;font-size:13px}
+  .wrap{max-width:1200px;margin:0 auto;padding:18px 18px 60px}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:8px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .kpi .n{font-size:28px;font-weight:800} .kpi .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  .kpi.bad .n{color:var(--critical)} .kpi.warn .n{color:var(--high)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+  .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 12px}
+  .bar{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px}
+  .bar .t{width:180px;color:#cfd6e2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar .b{height:10px;background:var(--accent);border-radius:5px;min-width:3px}
+  .bar .v{color:var(--muted)}
+  .ca{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .ca b{color:#fff} .ca .i{color:var(--muted)}
+  .plan{white-space:pre-wrap;font-size:13px;line-height:1.5;max-height:420px;overflow:auto;color:#cfd6e2}
+  .muted{color:var(--muted)} .full{grid-column:1/-1}
+  h2 .pill{font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
+</style></head>
+<body>
+<header><h1>📊 SafetyCommander · 管理端</h1><div class="sp"></div>
+  <a class="btn" href="/monitor">▶ 实时监控大屏</a>
+  <a class="back" href="/">切换视图</a></header>
+<div class="wrap">
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+    <div class="panel"><h2>Top hazards <span class="pill">violations</span></h2><div id="haz" class="muted">Loading…</div></div>
+    <div class="panel"><h2>By zone</h2><div id="zone" class="muted">Loading…</div></div>
+    <div class="panel"><h2>Open corrective-action backlog</h2><div id="ca" class="muted">Loading…</div></div>
+    <div class="panel"><h2>AI weekly plan <span class="pill">planner.py</span></h2><div id="plan" class="plan muted">Loading…</div></div>
+  </div>
+</div>
+<script>
+const esc=s=>(s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+async function j(u){try{return await (await fetch(u)).json()}catch(e){return null}}
+async function t(u){try{return await (await fetch(u)).text()}catch(e){return ''}}
+
+function bars(el, pairs){
+  if(!pairs||!pairs.length){el.innerHTML='<div class="muted">none</div>';return}
+  const max=Math.max(...pairs.map(p=>p[1]));
+  el.innerHTML=pairs.map(([k,v])=>`<div class="bar"><span class="t">${esc(k)}</span>
+    <span class="b" style="width:${Math.max(3,160*v/max)}px"></span><span class="v">${v}</span></div>`).join('');
+}
+async function tick(){
+  const k=await j('/api/kpi');
+  if(k){
+    const rate=k.observations? Math.round(k.violations/k.observations*100):0;
+    document.getElementById('kpis').innerHTML=`
+      <div class="kpi"><div class="n">${k.violations}</div><div class="l">Violations (${rate}%)</div></div>
+      <div class="kpi warn"><div class="n">${k.near_miss}</div><div class="l">Near-misses</div></div>
+      <div class="kpi bad"><div class="n">${k.critical}</div><div class="l">Critical</div></div>
+      <div class="kpi"><div class="n">${(k.open_correctives||[]).length}</div><div class="l">Open CA backlog</div></div>
+      <div class="kpi"><div class="n">${k.observations}</div><div class="l">Frames observed</div></div>`;
+    bars(document.getElementById('haz'), k.by_hazard||[]);
+    bars(document.getElementById('zone'), k.by_zone||[]);
+  }
+  const ca=await j('/api/correctives');
+  document.getElementById('ca').innerHTML=(ca&&ca.length)? ca.slice(0,12).map(c=>
+    `<div class="ca"><b>${esc(c.hazard)}</b> <span class="i">— ${esc(c.instruction)}</span></div>`).join('')
+    + (ca.length>12?`<div class="muted" style="padding-top:8px">…and ${ca.length-12} more</div>`:'')
+    : '<div class="muted">None open ✅</div>';
+  const plan=await t('/api/plan');
+  document.getElementById('plan').textContent=plan;
+}
+setInterval(tick,4000); tick();
+</script>
+</body></html>
