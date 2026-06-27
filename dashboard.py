@@ -18,6 +18,7 @@ from flask import Flask, jsonify, send_from_directory, Response, request
 import config
 import kpi_report
 import notify
+import main  # module ref needed by /api/detect (main.YOLO_URL, main.perception)
 from main import run_shift, run_video, run_videos, DEFAULT_CONTEXT, VIDEO_CONTEXT, VIDEO_EXT
 
 app = Flask(__name__)
