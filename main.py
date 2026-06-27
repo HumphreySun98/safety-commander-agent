@@ -28,6 +28,24 @@ import rag
 # Main loop is RAG-FREE by default (image + policy + perception). RAG is hazard-driven
 # and only enriches the citation once a hazard is already established. Turn on with SC_RAG=1.
 RAG_ENABLED = os.getenv("SC_RAG", "0") == "1"
+YOLO_URL = os.getenv("YOLO_URL", "")   # if set, run perception on a remote service (B's 4090)
+
+
+def _detect_remote(frame_path, annotate_to=None):
+    """Send a frame to a remote YOLO service (B's 4090) and get perception facts back.
+    Mirrors how the VLM runs on a served endpoint. Returns the perception dict."""
+    import base64
+    import requests
+    with open(frame_path, "rb") as f:
+        img_b64 = base64.b64encode(f.read()).decode()
+    r = requests.post(YOLO_URL.rstrip("/") + "/detect",
+                      json={"image_b64": img_b64}, timeout=20)
+    r.raise_for_status()
+    data = r.json()
+    if annotate_to and data.get("annotated_b64"):          # save the boxed frame for the dashboard
+        with open(annotate_to, "wb") as f:
+            f.write(base64.b64decode(data["annotated_b64"]))
+    return data.get("perception") or {}
 
 
 def _rag_enrich(judgment, frame_or_frames, policy, context, perception,
@@ -218,11 +236,13 @@ def run_videos(video_paths, context=None, on_update=None, on_done=None,
                 rep_name = f"_live_{name}_{idx:03d}.jpg"   # transient (git-ignored)
                 rep_path = config.ANNOTATED_DIR / rep_name
                 Image.fromarray(np.asarray(rep)).convert("RGB").save(rep_path, "JPEG", quality=85)
-                if hasattr(perception, "detect_for_frame"):
-                    try:
+                try:
+                    if YOLO_URL:                               # YOLO on B's 4090, results streamed back
+                        perc = _detect_remote(str(rep_path), annotate_to=str(rep_path))
+                    elif hasattr(perception, "detect_for_frame"):   # YOLO local (same machine)
                         perc = perception.detect_for_frame(str(rep_path), annotate_to=str(rep_path))
-                    except Exception as e:
-                        print(f"  (perception on window failed: {e})")
+                except Exception as e:
+                    print(f"  (perception on window failed: {e})")
 
             judgment = judge_clip(frames, policy, context, perception=perc,
                                   window_sec=window_sec, label=label)
