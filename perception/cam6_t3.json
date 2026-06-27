@@ -43,7 +43,9 @@
     }
   ],
   "derived": {
-    "people": 4
+    "people": 4,
+    "forklifts": 0,
+    "min_person_forklift_dist_m": null
   },
   "annotated_image": "frames_annotated/cam6_t3.jpg"
 }

@@ -2,6 +2,16 @@
   "frame": "cam1_t1.jpg",
   "detections": [
     {
+      "label": "forklift",
+      "bbox": [
+        98,
+        167,
+        373,
+        545
+      ],
+      "conf": 0.86
+    },
+    {
       "label": "person",
       "bbox": [
         951,
@@ -15,11 +25,21 @@
       "label": "person",
       "bbox": [
         984,
-        242,
-        28,
-        78
+        237,
+        34,
+        83
       ],
-      "conf": 0.68
+      "conf": 0.72
+    },
+    {
+      "label": "person",
+      "bbox": [
+        57,
+        254,
+        40,
+        50
+      ],
+      "conf": 0.46
     },
     {
       "label": "person",
@@ -50,10 +70,22 @@
         75
       ],
       "conf": 0.26
+    },
+    {
+      "label": "person",
+      "bbox": [
+        48,
+        246,
+        36,
+        62
+      ],
+      "conf": 0.25
     }
   ],
   "derived": {
-    "people": 5
+    "people": 7,
+    "forklifts": 1,
+    "min_person_forklift_dist_m": 0.0
   },
   "annotated_image": "frames_annotated/cam1_t1.jpg"
 }

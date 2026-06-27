@@ -4,22 +4,32 @@
     {
       "label": "person",
       "bbox": [
-        1134,
-        155,
-        65,
-        182
+        1136,
+        154,
+        61,
+        186
       ],
-      "conf": 0.82
+      "conf": 0.87
     },
     {
       "label": "person",
       "bbox": [
-        666,
-        382,
-        79,
-        261
+        661,
+        380,
+        89,
+        331
       ],
-      "conf": 0.79
+      "conf": 0.85
+    },
+    {
+      "label": "person",
+      "bbox": [
+        511,
+        544,
+        149,
+        176
+      ],
+      "conf": 0.77
     },
     {
       "label": "person",
@@ -30,20 +40,12 @@
         210
       ],
       "conf": 0.72
-    },
-    {
-      "label": "person",
-      "bbox": [
-        526,
-        550,
-        123,
-        169
-      ],
-      "conf": 0.67
     }
   ],
   "derived": {
-    "people": 4
+    "people": 4,
+    "forklifts": 0,
+    "min_person_forklift_dist_m": null
   },
   "annotated_image": "frames_annotated/cam5_t3.jpg"
 }

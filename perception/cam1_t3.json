@@ -2,14 +2,24 @@
   "frame": "cam1_t3.jpg",
   "detections": [
     {
+      "label": "forklift",
+      "bbox": [
+        95,
+        164,
+        377,
+        549
+      ],
+      "conf": 0.83
+    },
+    {
       "label": "person",
       "bbox": [
-        1019,
-        320,
-        46,
-        119
+        1018,
+        322,
+        48,
+        110
       ],
-      "conf": 0.79
+      "conf": 0.82
     },
     {
       "label": "person",
@@ -43,7 +53,9 @@
     }
   ],
   "derived": {
-    "people": 4
+    "people": 4,
+    "forklifts": 1,
+    "min_person_forklift_dist_m": 8.4
   },
   "annotated_image": "frames_annotated/cam1_t3.jpg"
 }

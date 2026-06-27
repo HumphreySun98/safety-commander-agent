@@ -1,0 +1,31 @@
+{
+  "frame": "cam7_overload.jpg",
+  "detections": [
+    {
+      "label": "forklift",
+      "bbox": [
+        652,
+        184,
+        391,
+        357
+      ],
+      "conf": 0.87
+    },
+    {
+      "label": "person",
+      "bbox": [
+        821,
+        247,
+        142,
+        125
+      ],
+      "conf": 0.27
+    }
+  ],
+  "derived": {
+    "people": 1,
+    "forklifts": 1,
+    "min_person_forklift_dist_m": 0.0
+  },
+  "annotated_image": "frames_annotated/cam7_overload.jpg"
+}

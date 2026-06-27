@@ -20,10 +20,22 @@
         61
       ],
       "conf": 0.31
+    },
+    {
+      "label": "person",
+      "bbox": [
+        50,
+        242,
+        31,
+        66
+      ],
+      "conf": 0.29
     }
   ],
   "derived": {
-    "people": 2
+    "people": 3,
+    "forklifts": 0,
+    "min_person_forklift_dist_m": null
   },
   "annotated_image": "frames_annotated/cam3_t2.jpg"
 }

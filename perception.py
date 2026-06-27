@@ -84,7 +84,11 @@ import math
 import os
 
 WEIGHTS_DIR = config.BASE_DIR / "weights"
-CONF_THRES = float(os.getenv("PERCEPTION_CONF", "0.25"))
+CONF_THRES = float(os.getenv("PERCEPTION_CONF", "0.25"))   # base run threshold
+# Per-LABEL confidence overrides (applied after class mapping). The forklift model
+# (keremberke) is reliable on real forklifts at high conf but false-fires on press
+# machines around 0.65-0.77, so require 0.8 for forklift while keeping person low.
+LABEL_CONF = {"forklift": float(os.getenv("FORKLIFT_CONF", "0.8"))}
 PERSON_HEIGHT_M = 1.7   # assumed average standing height, for the px->m scale
 IOU_DEDUP = 0.6         # merge boxes of the same label across models above this IoU
 
@@ -277,11 +281,14 @@ def detect_frame(image_path) -> dict:
             label = name_map.get(name)
             if not label:
                 continue
+            conf = float(b.conf)
+            if conf < LABEL_CONF.get(label, CONF_THRES):   # per-label threshold
+                continue
             x1, y1, x2, y2 = b.xyxy[0].tolist()
             detections.append({
                 "label": label,
                 "bbox": [round(x1), round(y1), round(x2 - x1), round(y2 - y1)],
-                "conf": round(float(b.conf), 2),
+                "conf": round(conf, 2),
             })
     detections = _dedup(detections)
 

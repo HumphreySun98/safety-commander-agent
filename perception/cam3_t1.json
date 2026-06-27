@@ -24,6 +24,16 @@
     {
       "label": "person",
       "bbox": [
+        50,
+        244,
+        30,
+        63
+      ],
+      "conf": 0.38
+    },
+    {
+      "label": "person",
+      "bbox": [
         927,
         190,
         22,
@@ -43,7 +53,9 @@
     }
   ],
   "derived": {
-    "people": 4
+    "people": 5,
+    "forklifts": 0,
+    "min_person_forklift_dist_m": null
   },
   "annotated_image": "frames_annotated/cam3_t1.jpg"
 }

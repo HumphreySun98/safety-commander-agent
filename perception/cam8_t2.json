@@ -2,18 +2,50 @@
   "frame": "cam8_t2.jpg",
   "detections": [
     {
+      "label": "forklift",
+      "bbox": [
+        449,
+        111,
+        298,
+        303
+      ],
+      "conf": 0.9
+    },
+    {
       "label": "person",
       "bbox": [
-        1037,
-        285,
-        73,
-        138
+        1046,
+        281,
+        67,
+        116
       ],
-      "conf": 0.57
+      "conf": 0.76
+    },
+    {
+      "label": "person",
+      "bbox": [
+        521,
+        150,
+        75,
+        149
+      ],
+      "conf": 0.49
+    },
+    {
+      "label": "person",
+      "bbox": [
+        1201,
+        43,
+        43,
+        89
+      ],
+      "conf": 0.25
     }
   ],
   "derived": {
-    "people": 1
+    "people": 3,
+    "forklifts": 1,
+    "min_person_forklift_dist_m": 0.0
   },
   "annotated_image": "frames_annotated/cam8_t2.jpg"
 }

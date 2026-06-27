@@ -2,6 +2,16 @@
   "frame": "cam8_t1.jpg",
   "detections": [
     {
+      "label": "forklift",
+      "bbox": [
+        562,
+        86,
+        302,
+        393
+      ],
+      "conf": 0.92
+    },
+    {
       "label": "person",
       "bbox": [
         1033,
@@ -13,7 +23,9 @@
     }
   ],
   "derived": {
-    "people": 1
+    "people": 1,
+    "forklifts": 1,
+    "min_person_forklift_dist_m": 2.1
   },
   "annotated_image": "frames_annotated/cam8_t1.jpg"
 }
