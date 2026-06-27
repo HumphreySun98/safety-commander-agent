@@ -21,6 +21,7 @@ import config
 from vlm_judge import judge_frame, judge_clip
 from actions import dispatch
 from shift_report import ShiftReport
+import perception
 from perception import load_perception
 import rag
 
@@ -209,18 +210,27 @@ def run_videos(video_paths, context=None, on_update=None, on_done=None,
             idx += 1
             label = f"{name} @ {int(t)}s"
             print(f"\n[{idx}/{total}] {label}  ({len(frames)} frames)")
-            judgment = judge_clip(frames, policy, context, window_sec=window_sec, label=label)
+            # Representative frame; if the perception layer supports video (B's
+            # detect_for_frame), run YOLO on it -> real distance facts for the VLM
+            # (no visual over-read) + boxes/distance line drawn for the dashboard.
+            rep_name, perc = None, None
+            if rep is not None:
+                rep_name = f"_live_{name}_{idx:03d}.jpg"   # transient (git-ignored)
+                rep_path = config.ANNOTATED_DIR / rep_name
+                Image.fromarray(np.asarray(rep)).convert("RGB").save(rep_path, "JPEG", quality=85)
+                if hasattr(perception, "detect_for_frame"):
+                    try:
+                        perc = perception.detect_for_frame(str(rep_path), annotate_to=str(rep_path))
+                    except Exception as e:
+                        print(f"  (perception on window failed: {e})")
+
+            judgment = judge_clip(frames, policy, context, perception=perc,
+                                  window_sec=window_sec, label=label)
             judgment.setdefault("timestamp", datetime.now().isoformat(timespec="seconds"))
-            judgment = _rag_enrich(judgment, frames, policy, context, None,
+            judgment = _rag_enrich(judgment, frames, policy, context, perc,
                                    is_clip=True, window_sec=window_sec, label=label)
             print(f"  👁️  {str(judgment.get('risk_level','?')).upper():8} "
                   f"{judgment.get('hazard_type')} | clause: {str(judgment.get('policy_clause'))[:60]}")
-
-            rep_name = None
-            if rep is not None:
-                rep_name = f"_live_{name}_{idx:03d}.jpg"   # transient (git-ignored)
-                Image.fromarray(np.asarray(rep)).convert("RGB").save(
-                    config.ANNOTATED_DIR / rep_name, "JPEG", quality=85)
 
             actions = dispatch(judgment)
             report.add(judgment, actions)
