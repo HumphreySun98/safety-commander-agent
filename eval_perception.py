@@ -29,11 +29,15 @@ from pathlib import Path
 import config
 
 # Hand-verified labels for our 25-frame demo set (frame stem -> has a real forklift).
+# NB: cam1 was re-checked against the raw frame — its left object is a PRESS machine,
+# not a forklift, so cam1 is a no-forklift frame (the model false-fires there; that
+# FP sits at 0.86-0.87 conf, overlapping the money shot's 0.87, so no threshold
+# separates it — reported honestly rather than hidden).
 REAL_FORKLIFT = {
-    "cam1_t1", "cam1_t2", "cam1_t3",          # forklift in the background
     "cam7_overload", "cam8_t1", "cam8_t2", "cam8_t3",
 }
 PRESS_ONLY = {  # press shop, NO forklift present (the false-positive trap)
+    "cam1_t1", "cam1_t2", "cam1_t3",
     "cam2_t1", "cam2_t2", "cam2_t3", "cam3_t1", "cam3_t2", "cam3_t3",
     "cam4_t1", "cam4_t2", "cam4_t3", "cam5_t1", "cam5_t2", "cam5_t3",
     "cam6_t1", "cam6_t2", "cam6_t3", "cam7_t1", "cam7_t2", "cam7_t3",
