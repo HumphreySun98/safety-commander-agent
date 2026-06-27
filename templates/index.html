@@ -10,6 +10,7 @@
         --panel2:#1b2230;--line:#2a3342;--accent:#7c5cff;--muted:#8a94a6;}
   .framebox{position:relative;background:#000;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;border-radius:8px;overflow:hidden}
   .framebox img,.framebox video{width:100%;height:100%;object-fit:contain;display:block}
+  #boxOverlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
   .framecap{position:absolute;left:10px;bottom:10px;background:rgba(0,0,0,.6);padding:4px 10px;border-radius:6px;font-size:12px;color:#cfd6e2}
   .vbanner{position:absolute;top:0;left:0;right:0;padding:9px 14px;display:none;align-items:center;gap:10px;font-weight:800;color:#0b0e13;box-shadow:0 2px 12px rgba(0,0,0,.45)}
   .vbanner .vlvl{font-size:12px;letter-spacing:.5px;padding:2px 9px;border-radius:6px;background:rgba(0,0,0,.28)}
@@ -40,7 +41,7 @@
   .report h3{font-size:13px;color:var(--muted);margin:.9em 0 .3em;text-transform:uppercase;letter-spacing:.5px}
   .report ul{margin:.2em 0 .6em;padding-left:18px} .report li{margin:.18em 0}
   .report code{background:var(--panel2);padding:1px 6px;border-radius:4px;font-size:12.5px}
-  .hidden{display:none}
+  .hidden{display:none !important}
   .spin{width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;display:inline-block;animation:s 0.8s linear infinite;vertical-align:-2px}
   @keyframes s{to{transform:rotate(360deg)}}
 </style>
@@ -74,6 +75,7 @@
               <div class="framebox">
                 <video id="frameVid" class="hidden" autoplay loop muted playsinline></video>
                 <img id="frameImg" src="" alt="waiting for first frame…"/>
+                <canvas id="boxOverlay"></canvas>
                 <div class="vbanner" id="vbanner"></div>
                 <div class="framecap" id="frameCap">—</div>
               </div>
@@ -155,6 +157,38 @@ function renderFeed(events){
   }).join('');
 }
 
+function capText(s){
+  const base = s.current_clip ? s.current_clip.replace(/\.[^.]+$/,'').replace(/_/g,' ')+' · LIVE'
+             : (s.current_frame ? s.current_frame + (s.current_annotated?' · YOLO overlay':'') : '—');
+  const d = s.current_derived||{}, f=[];
+  if(d.people!=null) f.push('👥 '+d.people);
+  if(d.forklifts!=null) f.push('🚜 '+d.forklifts);
+  if(d.min_person_forklift_dist_m!=null) f.push('↔ '+d.min_person_forklift_dist_m+' m');
+  return base + (f.length?'   ·   '+f.join('   '):'');
+}
+// draw YOLO boxes from the analysed window over the playing video (scaled, letterbox-aware)
+function drawBoxes(dets){
+  const v=document.getElementById('frameVid'), cv=document.getElementById('boxOverlay');
+  if(!cv||!v) return;
+  const ctx=cv.getContext('2d');
+  cv.width=cv.clientWidth; cv.height=cv.clientHeight;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if(v.classList.contains('hidden') || !dets || !dets.length) return;
+  const nw=v.videoWidth, nh=v.videoHeight; if(!nw||!nh) return;
+  const sc=Math.min(cv.width/nw, cv.height/nh), ox=(cv.width-nw*sc)/2, oy=(cv.height-nh*sc)/2;
+  const COL={person:'#22c55e',forklift:'#7c5cff',no_hardhat:'#ef4444',hardhat:'#22c55e'};
+  ctx.lineWidth=2; ctx.font='600 12px sans-serif';
+  dets.forEach(d=>{
+    if(!d.bbox) return;
+    const c=COL[d.label]||'#eab308';
+    const X=d.bbox[0]*sc+ox, Y=d.bbox[1]*sc+oy, W=d.bbox[2]*sc, H=d.bbox[3]*sc;
+    ctx.strokeStyle=c; ctx.strokeRect(X,Y,W,H);
+    const t=`${d.label} ${Math.round((d.conf||0)*100)}%`, tw=ctx.measureText(t).width+8;
+    ctx.fillStyle=c; ctx.fillRect(X, Math.max(0,Y-16), tw, 16);
+    ctx.fillStyle='#0b0e13'; ctx.fillText(t, X+4, Math.max(11,Y-4));
+  });
+}
+
 function md(t){
   const lines = t.split('\n'); let out=[], inList=false;
   const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')
@@ -197,8 +231,6 @@ async function tick(){
     vid.src = '/clip/'+encodeURIComponent(s.current_clip);
     vid.classList.remove('hidden'); img.classList.add('hidden');
     vid.play().catch(()=>{});
-    document.getElementById('frameCap').textContent =
-      s.current_clip.replace(/\.[^.]+$/,'').replace(/_/g,' ') + ' · LIVE';
   }
 
   if(s.index !== lastIndex && (s.current_frame || s.current_clip)){
@@ -228,6 +260,9 @@ async function tick(){
       }
     }
   }
+  // overlay YOLO boxes on the live video + show detection facts in the caption (every tick)
+  if(s.current_clip) drawBoxes(s.current_boxes || []);
+  document.getElementById('frameCap').textContent = capText(s);
   renderFeed(s.events||[]);
 
   if(s.status==='done' && s.report_md && !reportDrawn){

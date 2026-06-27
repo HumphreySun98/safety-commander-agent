@@ -37,6 +37,8 @@ STATE = {
     "current_frame": None,
     "current_annotated": None, # annotated frame name (boxes) if perception ran
     "current_clip": None,      # mp4 being analysed now (for live video playback)
+    "current_boxes": [],       # YOLO detections (bbox+label) to overlay on the video
+    "current_derived": {},     # derived facts (people/forklifts/distance)
     "latest": None,            # latest judgment dict
     "latest_actions": [],
     "events": [],              # [{frame, judgment, actions}, ...]
@@ -54,6 +56,8 @@ def _on_update(payload):
         STATE["current_frame"] = payload["frame"]
         STATE["current_annotated"] = payload.get("annotated")
         STATE["current_clip"] = payload.get("clip") or STATE.get("current_clip")
+        STATE["current_boxes"] = payload.get("boxes") or []
+        STATE["current_derived"] = payload.get("derived") or {}
         STATE["latest"] = payload["judgment"]
         STATE["latest_actions"] = payload["actions"]
         STATE["events"].append({
@@ -107,7 +111,7 @@ def start_shift():
             return False
         STATE.update({"status": "running", "index": 0, "total": 0,
                       "current_frame": None, "current_annotated": None,
-                      "current_clip": None,
+                      "current_clip": None, "current_boxes": [], "current_derived": {},
                       "latest": None, "latest_actions": [],
                       "events": [], "report_md": None, "error": None})
     notify.reset()   # clear worker inboxes for the new shift

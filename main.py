@@ -263,8 +263,10 @@ def run_videos(video_paths, context=None, on_update=None, on_done=None,
             report.add(judgment, actions)
             if on_update:
                 on_update({"index": idx, "total": total, "frame": rep_name or label,
-                           "annotated": rep_name, "clip": p.name, "judgment": judgment,
-                           "actions": actions, "report": report})
+                           "annotated": rep_name, "clip": p.name,
+                           "boxes": (perc or {}).get("detections") or [],
+                           "derived": (perc or {}).get("derived") or {},
+                           "judgment": judgment, "actions": actions, "report": report})
             if interval and idx < total:
                 time.sleep(interval)
 
