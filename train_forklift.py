@@ -36,7 +36,7 @@ BASE_MODEL = os.getenv("FORKLIFT_BASE", "yolov8s.pt")
 # Roboflow project to pull when no local dataset is given.
 RF_WORKSPACE = os.getenv("RF_WORKSPACE", "test-gun7j")
 RF_PROJECT = os.getenv("RF_PROJECT", "project-forklift01")
-RF_VERSION = int(os.getenv("RF_VERSION", "1"))
+RF_VERSION = int(os.getenv("RF_VERSION", "2"))   # project-forklift01 latest = v2
 
 
 def fetch_roboflow() -> Path:
