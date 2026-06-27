@@ -215,6 +215,33 @@ def api_deliveries():
     return jsonify(notify.deliveries())
 
 
+@app.post("/api/detect")
+def api_detect():
+    """On-demand YOLO for the live overlay: the browser sends the frame it is currently
+    showing, we run detection (remote on B's 4090 if YOLO_URL, else local) and return the
+    boxes — so the overlay tracks the playing video instead of a stale per-window frame."""
+    d = request.get_json(force=True, silent=True) or {}
+    img_b64 = d.get("image_b64")
+    if not img_b64:
+        return jsonify({"boxes": [], "derived": {}})
+    perc = {}
+    try:
+        if main.YOLO_URL:                                   # detect on B's 4090
+            import requests
+            data = requests.post(main.YOLO_URL.rstrip("/") + "/detect",
+                                 json={"image_b64": img_b64}, timeout=15).json()
+            perc = data.get("perception") if isinstance(data.get("perception"), dict) \
+                else (data if "derived" in data else {})
+        elif hasattr(main.perception, "detect_for_frame"):  # detect locally
+            import base64
+            tmp = config.ANNOTATED_DIR / "_detect_tmp.jpg"
+            tmp.write_bytes(base64.b64decode(img_b64))
+            perc = main.perception.detect_for_frame(str(tmp)) or {}
+    except Exception as e:
+        return jsonify({"boxes": [], "derived": {}, "error": str(e)})
+    return jsonify({"boxes": perc.get("detections") or [], "derived": perc.get("derived") or {}})
+
+
 if __name__ == "__main__":
     start_shift()  # auto-start the shift when the server boots
     # threaded=True so polling + frame serving work while the shift runs.

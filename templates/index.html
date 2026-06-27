@@ -114,7 +114,7 @@ const ACTION_LABEL = {
   safety_log:'📝 logged', notify_supervisor:'📣 supervisor notified',
   corrective_action:'🛠️ corrective action', escalation:'⚠️ escalated', flag_area:'⛔ area flagged'
 };
-let lastIndex = -1, lastClip = '', reportDrawn = false;
+let lastIndex = -1, lastClip = '', reportDrawn = false, _liveDerived = {};
 
 function color(lvl){ return COLORS[lvl] || '#6b7280'; }
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
@@ -160,7 +160,7 @@ function renderFeed(events){
 function capText(s){
   const base = s.current_clip ? s.current_clip.replace(/\.[^.]+$/,'').replace(/_/g,' ')+' · LIVE'
              : (s.current_frame ? s.current_frame + (s.current_annotated?' · YOLO overlay':'') : '—');
-  const d = s.current_derived||{}, f=[];
+  const d = (s.current_clip ? _liveDerived : s.current_derived) || {}, f=[];
   if(d.people!=null) f.push('👥 '+d.people);
   if(d.forklifts!=null) f.push('🚜 '+d.forklifts);
   if(d.min_person_forklift_dist_m!=null) f.push('↔ '+d.min_person_forklift_dist_m+' m');
@@ -187,6 +187,25 @@ function drawBoxes(dets){
     ctx.fillStyle=c; ctx.fillRect(X, Math.max(0,Y-16), tw, 16);
     ctx.fillStyle='#0b0e13'; ctx.fillText(t, X+4, Math.max(11,Y-4));
   });
+}
+
+// client-driven detection: sample the frame the video is CURRENTLY showing, run YOLO on it,
+// and draw boxes that line up with what's on screen (much faster than the per-window VLM loop).
+async function detectLoop(){
+  const v=document.getElementById('frameVid');
+  try{
+    if(v && !v.classList.contains('hidden') && v.videoWidth && !v.paused && !v.ended){
+      const cap=document.createElement('canvas');
+      cap.width=v.videoWidth; cap.height=v.videoHeight;
+      cap.getContext('2d').drawImage(v,0,0,cap.width,cap.height);
+      const b64=cap.toDataURL('image/jpeg',0.6).split(',')[1];
+      const d=await (await fetch('/api/detect',{method:'POST',
+        headers:{'Content-Type':'application/json'},body:JSON.stringify({image_b64:b64})})).json();
+      drawBoxes(d.boxes||[]);
+      _liveDerived=d.derived||{};
+    }
+  }catch(e){}
+  setTimeout(detectLoop, 350);
 }
 
 function md(t){
@@ -260,8 +279,7 @@ async function tick(){
       }
     }
   }
-  // overlay YOLO boxes on the live video + show detection facts in the caption (every tick)
-  if(s.current_clip) drawBoxes(s.current_boxes || []);
+  // boxes are drawn by the client-side detectLoop (synced to playback); here just the caption
   document.getElementById('frameCap').textContent = capText(s);
   renderFeed(s.events||[]);
 
@@ -281,6 +299,7 @@ async function restart(){
 
 setInterval(tick, 1200);
 tick();
+detectLoop();   // client-driven YOLO overlay, synced to the playing video
 </script>
 </body>
 </html>
