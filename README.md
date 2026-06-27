@@ -1,12 +1,12 @@
 # 🦺 SafetyCommander — Autonomous Factory Safety Officer
 
-An AI agent that **owns the safety officer's shift**: it watches the production
-floor through camera frames, reasons about risk **by reading the site's written
-safety policy**, takes the action that policy requires, and hands a written report
-to the next shift.
+An AI agent that **owns the safety officer's shift**. It watches the production floor on
+camera, reasons about risk **by reading the site's written safety policy**, takes the
+action that policy requires, routes the alert to the right worker, and rolls the shift up
+into reports and a forward-looking inspection/training plan.
 
-Built for the **Zapdos Labs · AI Agents for the American Industrial Revolution**
-hackathon (Role 01 — Safety officer / EHS coordinator).
+Built for **Zapdos Labs · AI Agents for the American Industrial Revolution** (Role 01 —
+Safety officer / EHS coordinator). Reasoning by **Qwen3-VL** served on vLLM.
 
 ---
 
@@ -18,58 +18,96 @@ The hackathon's central judging question is:
 
 SafetyCommander is built around that line:
 
-- The **VLM (Qwen3-VL) decides the risk level** by reading `safety_policy.txt` and
-  the camera frame together. It must **cite the specific policy clause** it relied on.
-- The code **never** maps a hazard to a risk level. There is no
-  `if "no_hardhat": risk = "high"` anywhere. Grep for it — it isn't there.
-- `dispatch()` only **routes** the model's risk level to the actions the policy
-  prescribes for that level (log / notify / corrective / escalate / flag area).
-- **Edit the policy → the judgments change.** Make the welding bay exempt, and the
-  same welding frame stops being a violation. That's the whole demo.
+- The **VLM decides the risk level** by reading `safety_policy.txt` and the camera footage
+  *together*, and must **cite the specific policy clause** it relied on.
+- The code **never** maps a hazard to a risk level. There is no `if "no_hardhat": risk="high"`
+  anywhere — grep for it, it isn't there.
+- Every other component is deliberately **decision-free**: `actions.dispatch()` only *routes*
+  the model's risk level to actions; `perception.py` only *measures* (distances, counts);
+  `rag.py` only *retrieves* regulations to cite; `notify.py` only *delivers* alerts to people.
+- **Edit one line of policy → the verdict flips.** That is the demo, and it is impossible
+  for a hardcoded system.
 
-This shows all three things the brief asks an "agent" to be: a **reasoning model**,
-**workflow tools** (safety log, supervisor notify, corrective actions, escalation,
-shift report), and **autonomous** (it runs watch → decide → act → report on its own).
+That makes it a real **agent**, not a chatbot: a reasoning model in a closed
+**sense → think → act → report** loop that runs autonomously.
 
 ---
 
-## Architecture
+## What it does — one agent, three horizons
+
+| Horizon | What the agent does |
+|---|---|
+| **DAY** (live) | Watches each camera over time (temporal, multi-frame), reasons risk from policy, fires risk-graded actions (log · notify · corrective ticket · escalate · Slack), routes each alert to the right worker, and writes a **shift-handoff report**. |
+| **WEEK** | `planner.py` reads the period's data + policy + retrieved industrial EHS practice and proposes a **preventive plan** — inspections & training with when / who / content / target clause. |
+| **MONTH** | `kpi_report.py` rolls logs into a **KPI report** — violation rate, near-misses, leading/lagging indicators, top hazards, open corrective-action backlog. |
+
+The agent **proposes**; humans confirm.
+
+---
+
+## Architecture — four layers
 
 ```
-frames/                 demo camera frames (static; no live camera needed)
-safety_policy.txt       the rules — single source of truth, editable by ops manager
-knowledge/              RAG corpus — OSHA standards, plant SOPs, SDS (factory regs)
-rag.py                  TF-IDF retrieval over knowledge/ (relevant regs per scene)
-config.py               env + paths + policy loader
-vlm_judge.py            ❤ judge_frame()/judge_clip(): VLM reads policy + frame (+ retrieved regs)
-actions.py              guarded actions + dispatch() (routes risk level -> actions)
-shift_report.py         accumulates events -> markdown handoff report
-main.py                 the autonomous loop (headless)
-dashboard.py            Flask live dashboard
-templates/index.html    single-page dark UI
-extract_frames.py       optional: sample frames from a demo video
+THINK        vlm_judge.py     ❤ judge_frame()/judge_clip(): VLM reads policy + footage
+                              (+ retrieved regs + perception facts) → verdict + cited clause
+ACT          actions.py       dispatch(): routes the model's risk level → guarded actions
+             notify.py        routes each alert to the right worker (by role/zone) + ack state
+REPORT       shift_report.py  accumulates events → markdown handoff
+             kpi_report.py    MONTH roll-up   ·   planner.py  WEEK plan
+
+GROUND       perception.py    YOLO measures facts only (person/forklift, distance) — no risk
+             rag.py           TF-IDF retrieval over knowledge/ — cites OSHA/SOP — no risk
+             safety_policy.txt  the editable house rules (single source of truth)
+             knowledge/         OSHA 1910 standards, plant SOPs, SDS
+
+LOOP / UI    main.py          the autonomous loop (headless; static frames or video)
+             dashboard.py     Flask app + JSON APIs
+             templates/ static/  the web product (below)
 ```
 
-### Grounding in the factory's regulations (RAG)
+**Risk is decided in exactly one place — `vlm_judge.py`.** Everything else measures, routes,
+retrieves, or reports. That separation is the whole point.
 
-`safety_policy.txt` is the editable *house rules*. Behind it, `knowledge/` holds the
-actual references — OSHA 1910 standards, the plant's SOPs, and chemical SDS. For each
-frame/clip, [rag.py](rag.py) retrieves (TF-IDF) the regulations relevant to the scene and
-feeds them to the VLM, which then cites the specific standard. Example: an overloaded
-forklift the bare site policy passes is flagged **once OSHA `1910.178(n)(6)`
-(obstructed-view) is retrieved** — and the model cites it. Retrieval supplies *knowledge*;
-the VLM still decides the risk (no rules live in `rag.py`). Disable with `SC_RAG=0`.
+---
 
-Per frame, the verdict is structured JSON:
+## The product — a two-role web app
+
+`python dashboard.py` → `http://localhost:8000`
+
+- **`/` role chooser** → Worker or Manager.
+- **`/monitor` — live big-screen:** the camera **video plays in real time** with **YOLO
+  boxes + person↔forklift distance** drawn on it, a burned-in violation banner, the VLM
+  verdict with the cited clause, and a live event feed.
+- **`/worker` — Slack/DingTalk-style inbox:** pick your identity; safety alerts in *your*
+  zone are pushed to you with **Acknowledge / Resolve / Escalate**, and your scheduled
+  inspections/training arrive as tasks. Mobile-friendly.
+- **`/manager` — operations console:** KPI cards, hazard & zone charts, open-CA backlog, the
+  AI weekly plan, and an **alert delivery & acknowledgment** table that closes the loop
+  (who got each alert, who acted).
+- **Trilingual:** English (default) · 中文 · Español, switchable on every page.
+
+---
+
+## Grounding (so the judgment is trustworthy)
+
+- **Perception (YOLO, on a GPU):** `perception.py` detects people & forklifts and measures
+  the nearest person↔forklift **distance** — facts the VLM uses instead of guessing (it does
+  not invent a "0.0 m" it cannot see). Facts only; never a risk level.
+- **RAG (two domain-targeted paths):** at **judge time** it retrieves the relevant **OSHA
+  1910** standard for the hazard so the model cites it; at **plan time** it retrieves
+  industrial inspection/training cadence to ground the weekly plan. Citation/knowledge only —
+  no rules live in `rag.py`. Toggle with `SC_RAG`.
+
+Per window the verdict is structured JSON:
 
 ```json
 {
-  "observation": "A worker on the warehouse floor is not wearing a hard hat...",
-  "hazard_type": "missing_hardhat",
-  "risk_level": "medium",
-  "policy_clause": "1.1 Hard hats are mandatory in all production, warehouse, and dock zones.",
-  "reasoning": "Section 1.1 requires hard hats in the warehouse and the worker has none; per Section 8 a clear violation with a person exposed is MEDIUM.",
-  "recommended_actions": ["Issue hard hat", "Coach worker", "Open corrective action"]
+  "observation": "A forklift is moving with a raised load while a worker stands in the aisle...",
+  "hazard_type": "forklift_pedestrian_proximity",
+  "risk_level": "high",
+  "policy_clause": "2.1 A minimum 3-meter separation must be kept between a moving forklift and any pedestrian.",
+  "reasoning": "Section 2.1 requires 3 m; perception measured 2.1 m with the load raised → per Section 8 this is HIGH.",
+  "recommended_actions": ["Sound horn", "Stop forklift", "Open corrective action"]
 }
 ```
 
@@ -79,92 +117,78 @@ Per frame, the verdict is structured JSON:
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env      # then put the real VLLM_KEY in .env
-```
-
-The model endpoint (OpenAI-compatible Qwen3-VL) and key come from the hackathon brief.
-
-## Run
-
-**Headless** (process `frames/`, print + save the handoff report):
-
-```bash
-python main.py                              # static frames (single-frame judging)
-python main.py demo_clips/cam7_forklift_overload.mp4   # VIDEO: one clip, temporal judging
-python main.py demo_clips/                   # VIDEO: all 8 cameras as ONE shift
-```
-
-**Video mode** is the closed-loop monitor: it slides over a clip in short windows,
-sends each window's frames to Qwen3-VL *together*, and judges the **behaviour over
-time** (a pedestrian entering a forklift's path = a developing near-miss; an
-overloaded load tilting in transit). Single frames miss these; the clip catches them.
-
-**Live dashboard** (recommended for the demo — Flask):
-
-```bash
-python dashboard.py                                          # static frames
-SC_VIDEO=demo_clips/cam7_forklift_overload.mp4 python dashboard.py   # video: one clip
-SC_VIDEO=demo_clips python dashboard.py                         # video: 8-camera shift
-# open http://localhost:8000
-```
-
-**Run as a desktop app** (looks like a product on the big screen):
-
-```bash
-pip install pywebview
-python app_launcher.py                       # native window, no browser chrome
-# zero-setup fallback: python dashboard.py & then a chromeless browser window:
-#   macOS: open -na "Google Chrome" --args --app=http://localhost:8000   (or F11 fullscreen)
-```
-
-The dashboard shows, in real time: the current frame, the VLM verdict, the **cited
-policy clause**, the risk level (colour-coded), the actions triggered, the live
-event feed, and the final shift handoff report.
-
-**Test just the judge** against the live endpoint:
-
-```bash
-python vlm_judge.py                 # judges every frame in frames/
-python vlm_judge.py frames/01_forklift.jpg
+cp .env.example .env      # set VLLM_BASE_URL / VLLM_KEY (the Qwen3-VL endpoint)
 ```
 
 ---
 
-## The killer demo: prove the model is reasoning, not the code
+## Run
 
-1. Run the dashboard — note how a welding frame outside a hot-work bay is flagged.
-2. Edit `safety_policy.txt`: add the camera's zone to the **Zone W** welding-bay
-   exemption (clause 3.4).
-3. Click **Restart shift**. The same frame is now judged `none`/`low`, and the
-   model cites the exemption clause. **No code changed.** That's the point.
+**Recommended demo — on the GPU machine** (local YOLO, real-time boxes + distance, no tunnel):
+
+```bash
+SC_VIDEO=demo_live python dashboard.py        # then open http://localhost:8000
+```
+`demo_live/` is the curated camera set (`mkdir demo_live && cp demo_clips/cam{2..8}*.mp4 demo_live`).
+With no `SC_VIDEO`, the dashboard defaults to real-time video over `demo_clips/`.
+
+**Drive from a laptop, compute YOLO on a remote GPU** (the perception layer is served over HTTP,
+exactly like the VLM):
+
+```bash
+export YOLO_URL=https://<gpu-host>/      # a yolo_server.py on the GPU box
+SC_VIDEO=demo_live YOLO_URL=$YOLO_URL python dashboard.py
+```
+
+**Headless end-to-end** (prints + saves every artifact; good for verifying the whole agent):
+
+```bash
+python main.py demo_clips/      # DAY: watch 8 cameras → handoff report
+python kpi_report.py            # MONTH: KPI roll-up
+python planner.py               # WEEK: AI preventive plan
+python demo_policy_flip.py      # the climax (below)
+```
+
+---
+
+## The killer demo — prove the model is reasoning, not the code
+
+`python demo_policy_flip.py` judges the **same** overloaded-forklift clip twice:
+
+1. Under the base policy → the model returns its verdict and cites the clause it used.
+2. Add **one clause** (`2.6` — max 2 stacked bins / load must not block the operator's view)
+   and re-judge → the **same footage now reads as a violation**, and the model **cites the new
+   clause `2.6`**.
+
+No code changed — only the policy text. That is the entire thesis in 20 seconds.
+
+---
+
+## Evaluation (honest numbers)
+
+- **Reasoning:** verdicts cite the controlling clause; flipping a policy line flips the verdict.
+- **Detection (YOLO):** **18/21 forklift precision** (the money-shot frames are clean; the 3
+  false positives are one camera's press at an angle that scores like a forklift), **3/4 recall**,
+  measured **2.1 m** near-miss distance. ~half of person↔forklift pairs read 0.0 m on 2D box
+  overlap — reported honestly.
+- **Robustness:** in video (temporal) mode, **0 false criticals** across the demo clips; the
+  grounding prompt + real distances stop the model inventing hazards it cannot see.
+- **Latency:** ~4–5 s per analysis window (window-cadence monitoring, not 30 fps).
+
+See [docs/eval.md](docs/eval.md), [docs/system_design.html](docs/system_design.html), and
+[docs/demo_script.md](docs/demo_script.md).
 
 ---
 
 ## Outputs
 
-- `logs/safety_log.json`, `corrective_actions.json`, `incidents.json`, `notifications.json`
-- `reports/handoff_SHIFT-*.md` — the shift handoff report
+- `logs/` — `safety_log.json`, `corrective_actions.json`, `incidents.json`
+- `reports/` — `handoff_SHIFT-*.md`, `kpi_rollup.md`, `weekly_plan.md`
 
 ## Notes
 
-- Detection (YOLO) is intentionally **not** wired in — Qwen3-VL reads the raw frame
-  directly. A YOLO overlay can be added later as a pre-filter if needed.
-- Frames are downscaled before sending to respect the model's token budget.
 - `VLM_TEMPERATURE=0` by default so verdicts are reproducible for the demo.
-
-### Demo data
-
-- `frames/` — **real factory CCTV**, sampled from the Mendeley *"Video Dataset for
-  Safe and Unsafe Behaviours"* (Eskişehir press shop, CC BY 4.0). 8 camera views ×
-  3 snapshots. See [frames/SOURCES.md](frames/SOURCES.md) for attribution and the
-  camera→class mapping. Extracted with `extract_frames.py`.
-- `frames_samples/` — openly-licensed stock imagery (Wikimedia Commons) that
-  exercises the higher-severity / escalation path. Run it with
-  `python main.py frames_samples`.
-
-A note on honesty: on this low-res wide-angle CCTV the model's most common *true*
-finding is missing PPE (clause 1.1/1.2/1.3); it also clears compliant scenes
-(`none`) and flags distinct hazards (phone use 5.1, eye protection 1.3). A grounding
-instruction in the prompt keeps it from inventing people/loads it cannot see — so it
-does **not** raise false criticals. Edit `safety_policy.txt` to match a specific
-site and the verdicts shift accordingly; that is the point.
+- Graceful degradation: with no GPU/`YOLO_URL` the agent still runs (VLM-only, no boxes); with
+  no Slack webhook the notify action is a no-op. The agent never crashes on a missing optional.
+- Demo footage is **real factory CCTV** (Mendeley *"Video Dataset for Safe and Unsafe
+  Behaviours"*, Eskişehir press shop, CC BY 4.0). See [frames/SOURCES.md](frames/SOURCES.md).
