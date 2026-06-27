@@ -85,11 +85,20 @@
 
 <!-- 1 -->
 <h2 id="s1"><span class="n">01</span>Problem &amp; goal</h2>
-<p>Take over the <b>floor-watch slice</b> of the safety officer (Role 01): continuously watch the
-floor, judge hazards against the site's rules, act, and hand a report to the next shift —
-autonomously. <span class="muted">Scope is deliberately narrowed: this is an
-<b>autonomous safety-monitor + shift handoff</b>, not the whole role (permits/sign-offs,
-training, KPI rollups, environmental records, JHAs are out of scope). Pitch it as exactly that.</span></p>
+<p>SafetyCommander runs the safety officer's <b>observe → roll-up → plan</b> line across
+DAY / WEEK / MONTH, autonomously:</p>
+<ul>
+<li><b>DAY</b> — watch the floor on video, judge each event vs the policy, act
+   (log / notify / escalate / ticket / Slack), hand a shift report.</li>
+<li><b>MONTH</b> — roll the logged events up into KPIs: violation rate, trends, top
+   hazards, open corrective-action backlog (<code>kpi_report.py</code>).</li>
+<li><b>WEEK</b> — the model <i>reasons</i> next week's inspections + toolbox talks +
+   training (when / who / what), each tied to the hazard and the policy/OSHA clause
+   (<code>planner.py</code>).</li>
+</ul>
+<p>The agent <b>proposes</b>; humans <b>confirm &amp; execute</b>. <span class="muted">Still out
+of scope: permits/sign-offs, fire drills, environmental records, JHAs — the deeper
+process/compliance tasks. Pitch it as observe→roll-up→plan, not "the entire role".</span></p>
 <div class="grid">
   <div class="card"><h4>The 3 "agent" pillars (demo must show all)</h4>
     <ul><li><b>Reasoning model</b> — a frontier model does the thinking, not regex/if-then.</li>

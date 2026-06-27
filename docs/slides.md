@@ -22,8 +22,10 @@ only (see `docs/eval.md`). Judged by operations managers.
 - **Reasoning model** — Qwen3-VL reads the *written safety policy* + the video, and judges. Not regex, not if-then.
 - **Workflow tools** — safety log, corrective tickets, incident escalation, **Slack alerts**, shift handoff.
 - **Autonomous** — runs watch→decide→act→report with no human in the loop.
+- **Covers DAY · WEEK · MONTH** — observe (live monitor + handoff) → roll-up (monthly KPIs)
+  → plan (next week's inspections + training). The agent proposes; humans confirm.
 
-*Notes:* "No one types at it. It owns the shift." (Slack screenshot here.)
+*Notes:* "No one types at it. It owns the shift — and rolls it up to the month and plans the week." (Slack screenshot here.)
 
 ---
 
@@ -61,7 +63,8 @@ only (see `docs/eval.md`). Judged by operations managers.
 **Title:** An agent built for your floor
 **Bullets:**
 - Real problem ✓ · the **model** reasons (not the dev) ✓ · believable end-to-end on real CCTV ✓ · safe to show an ops manager ✓
-- Honest scope: the **real-time safety-monitor + handoff** slice (not permits/training/KPI).
+- Scope: the **observe → roll-up → plan** line — DAY monitor+handoff, MONTH KPI roll-up,
+  WEEK AI-planned inspections+training (agent proposes, humans confirm). Out: permits, fire drills, JHAs.
 - Roadmap: scale RAG to full OSHA + every machine's SOP; add guard/PPE/fire detectors; on-prem VLM fallback.
 
 *Notes:* "It watches, reasons, acts, and reports — and it tells you, on the record, why."
