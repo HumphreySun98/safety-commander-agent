@@ -1,0 +1,19 @@
+{
+  "frame": "cam7_t2.jpg",
+  "detections": [
+    {
+      "label": "person",
+      "bbox": [
+        1091,
+        78,
+        40,
+        81
+      ],
+      "conf": 0.32
+    }
+  ],
+  "derived": {
+    "people": 1
+  },
+  "annotated_image": "frames_annotated/cam7_t2.jpg"
+}

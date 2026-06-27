@@ -1,0 +1,49 @@
+{
+  "frame": "cam6_t1.jpg",
+  "detections": [
+    {
+      "label": "person",
+      "bbox": [
+        75,
+        582,
+        127,
+        137
+      ],
+      "conf": 0.64
+    },
+    {
+      "label": "person",
+      "bbox": [
+        260,
+        643,
+        119,
+        76
+      ],
+      "conf": 0.52
+    },
+    {
+      "label": "person",
+      "bbox": [
+        138,
+        68,
+        47,
+        101
+      ],
+      "conf": 0.44
+    },
+    {
+      "label": "person",
+      "bbox": [
+        254,
+        55,
+        38,
+        87
+      ],
+      "conf": 0.33
+    }
+  ],
+  "derived": {
+    "people": 4
+  },
+  "annotated_image": "frames_annotated/cam6_t1.jpg"
+}
