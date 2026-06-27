@@ -1,0 +1,99 @@
+ACME PRECISION MANUFACTURING — SITE SAFETY POLICY (Plant 4)
+Version: 2026-06 · Owner: EHS Department · Editable by the Operations Manager
+
+This document is the SINGLE SOURCE OF TRUTH for hazard classification on the
+production floor. The on-shift safety officer (human or agent) must judge every
+observation strictly against the clauses below. If a clause is edited, judgments
+must follow the edited text. Generic assumptions do not override this policy.
+
+------------------------------------------------------------------------------
+SECTION 1 — PERSONAL PROTECTIVE EQUIPMENT (PPE)
+1.1 Hard hats are MANDATORY in all production, warehouse, and dock zones.
+1.2 High-visibility vests (Class 2 or higher) are MANDATORY anywhere powered
+    industrial trucks operate (warehouse, dock, truck aisles).
+1.3 Safety glasses or a face shield are MANDATORY in machining, grinding,
+    welding, and chemical-handling areas.
+1.4 Cut-resistant gloves are required when handling sheet metal, blades, or glass.
+1.5 Hearing protection is required where posted (press shop, any area >85 dBA).
+1.6 EXEMPTION: The front office, training rooms, break room, and the painted
+    GREEN pedestrian walkways are PPE-OPTIONAL. Absence of a hard hat or vest in
+    those areas is NOT a violation.
+
+------------------------------------------------------------------------------
+SECTION 2 — POWERED INDUSTRIAL TRUCKS (FORKLIFTS) & PEDESTRIANS
+2.1 A minimum 3-meter (10 ft) separation must be kept between a MOVING forklift
+    and any pedestrian on foot.
+2.2 No person may stand or walk UNDER or within the swing path of a raised /
+    lifted load. This is a life-safety rule with zero tolerance.
+2.3 Forklifts must travel at or below 8 km/h and sound the horn at blind corners
+    and intersections.
+2.4 Pedestrians crossing a truck aisle must use a marked crossing and make eye
+    contact with the operator.
+2.5 An unattended forklift must have forks lowered, controls in neutral, and the
+    key removed.
+
+------------------------------------------------------------------------------
+SECTION 3 — FIRE, SMOKE & HOT WORK
+3.1 Any open flame, fire, or visible smoke OUTSIDE a designated hot-work bay is
+    an IMMEDIATE life-safety emergency.
+3.2 Hot work (welding, grinding, cutting) is permitted ONLY in the designated
+    welding bay (Zone W) or under an active Hot Work Permit with a posted fire watch.
+3.3 Fire exits, extinguishers, and alarm pulls must remain unobstructed at all times.
+3.4 EXEMPTION: Sparks and arc light INSIDE the designated welding bay (Zone W)
+    during a permitted operation are EXPECTED and are NOT a fire hazard, provided
+    welding screens are in place.
+
+------------------------------------------------------------------------------
+SECTION 4 — SPILLS & HOUSEKEEPING
+4.1 Liquid spills on any walking or working surface are a slip hazard and must be
+    contained and signed (wet-floor) immediately.
+4.2 Chemical spills require area isolation and trained spill-response.
+4.3 Aisles, exits, and electrical panels must be kept clear (36 in / 0.9 m of
+    clearance in front of panels).
+
+------------------------------------------------------------------------------
+SECTION 5 — RESTRICTED BEHAVIORS
+5.1 Hand-held mobile phone use is prohibited while walking in truck aisles or
+    while operating equipment (distraction hazard).
+5.2 Running is prohibited on the production floor except during an evacuation.
+
+------------------------------------------------------------------------------
+SECTION 6 — MACHINE GUARDING, LOTO, HEIGHT, CONFINED SPACE
+6.1 Machine guards must be in place while equipment is running. A missing or open
+    guard on running equipment is a serious hazard.
+6.2 Energized maintenance requires Lockout/Tagout (LOTO) before work begins.
+6.3 Work above 1.8 m (6 ft) requires fall protection (harness or guardrail).
+6.4 Confined-space entry requires a permit and a posted attendant.
+
+------------------------------------------------------------------------------
+SECTION 7 — ZONE NOTES (use the SHIFT CONTEXT to know which zone the camera covers)
+- Zone W            = designated welding / hot-work bay; hot work and sparks expected.
+- Green walkway     = pedestrian-protected lane; PPE-optional (see 1.6).
+- Warehouse / dock  = active forklift zones; full PPE required (1.1, 1.2).
+- Machining area    = eye protection and guarding rules apply (1.3, 6.1).
+
+------------------------------------------------------------------------------
+SECTION 8 — RISK CLASSIFICATION & REQUIRED RESPONSE
+Classify each observation into EXACTLY ONE level below by reasoning from the
+clauses above. The listed response is what that level requires.
+
+- NONE     : No hazard, or a behavior explicitly permitted / exempt by this policy.
+             Response: routine observation log only.
+- LOW      : Minor or potential issue with no person currently exposed (e.g. minor
+             clutter, a single non-critical PPE item missing in a low-traffic spot).
+             Response: log for trend tracking; no human dispatch.
+- MEDIUM   : A clear policy violation in an ACTIVE area with a person exposed but no
+             imminent injury (e.g. worker with no hard hat in an active warehouse,
+             phone use in a truck aisle, a small uncontained spill).
+             Response: log + notify shift supervisor + open a corrective action.
+- HIGH     : A near-miss or serious hazard that could cause injury imminently (e.g.
+             pedestrian inside the 3 m forklift separation, missing guard on running
+             equipment, blocked fire exit).
+             Response: escalate immediately + record as a near-miss + notify supervisor.
+- CRITICAL : Immediate danger to life (fire / smoke outside a hot-work bay, a person
+             under a raised load, a person struck or fallen, a chemical release).
+             Response: emergency escalation + flag and clear the area + notify
+             supervisor and EHS at once.
+
+End of policy. The Operations Manager may edit any clause; the safety officer's
+judgments must follow the edited text exactly.

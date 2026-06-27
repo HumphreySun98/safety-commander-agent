@@ -1,0 +1,19 @@
+# secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# generated artifacts
+logs/
+reports/
+
+# the hackathon brief (large binary)
+*.pdf
+
+# os
+.DS_Store
