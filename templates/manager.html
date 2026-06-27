@@ -42,6 +42,12 @@
           <div class="card-body"><pre class="plan-pre" id="plan" data-i18n="loading">Loading…</pre></div></div></div>
       </div>
 
+      <div class="row row-cards mt-1">
+        <div class="col-12"><div class="card"><div class="card-header"><h3 class="card-title" data-i18n="panel_delivery">Alert delivery &amp; acknowledgment</h3></div>
+          <div class="table-responsive" style="max-height:360px;overflow:auto"><table class="table table-vcenter card-table">
+            <tbody id="deliv"><tr><td class="text-secondary" data-i18n="loading">Loading…</td></tr></tbody></table></div></div></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -52,7 +58,8 @@
 const esc=s=>(s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 async function j(u){try{return await (await fetch(u)).json()}catch(e){return null}}
 async function t(u){try{return await (await fetch(u)).text()}catch(e){return ''}}
-let _k=null, _ca=null, _plan='', hazChart=null, zoneChart=null;
+let _k=null, _ca=null, _plan='', _deliv=null, hazChart=null, zoneChart=null;
+const STCOLOR={unread:'bg-secondary',acknowledged:'bg-azure',resolved:'bg-green',escalated:'bg-orange'};
 
 function barOpts(pairs, color){
   return {
@@ -91,8 +98,16 @@ function render(){
     + (_ca.length>14?`<tr><td class="text-secondary">…+${_ca.length-14}</td></tr>`:'')
     : `<tr><td class="text-secondary">${T('none_open')}</td></tr>`;
   document.getElementById('plan').textContent=_plan || T('no_plan');
+  document.getElementById('deliv').innerHTML=(_deliv&&_deliv.length)? _deliv.map(d=>{
+    const c=C_LVL[d.level]||'#f97316';
+    const recips=(d.to||[]).map(r=>`<span class="badge ${STCOLOR[r.state]||'bg-secondary'} me-1">${esc(r.worker)}: ${esc(r.state)}</span>`).join('');
+    return `<tr><td style="white-space:nowrap" class="text-secondary small">${esc((d.ts||'').replace('T',' ').slice(11,16))}</td>
+      <td><span class="badge" style="background:${c};color:#0b0e13">${esc(d.level).toUpperCase()}</span></td>
+      <td class="fw-bold">${esc(d.hazard)}</td><td>${recips}</td></tr>`;
+  }).join('') : `<tr><td class="text-secondary">${T('none_open')}</td></tr>`;
 }
-async function tick(){ _k=await j('/api/kpi'); _ca=await j('/api/correctives'); _plan=await t('/api/plan'); render(); }
+const C_LVL={none:'#6b7280',low:'#22c55e',medium:'#eab308',high:'#f97316',critical:'#ef4444'};
+async function tick(){ _k=await j('/api/kpi'); _ca=await j('/api/correctives'); _plan=await t('/api/plan'); _deliv=await j('/api/deliveries'); render(); }
 window.onLangChange=render;
 setInterval(tick,4000); tick();
 </script>

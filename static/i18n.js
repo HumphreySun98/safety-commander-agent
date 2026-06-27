@@ -22,6 +22,11 @@
       none_open: "None open ✅", loading: "Loading…",
       monitor_sub: "Autonomous safety officer · Qwen3-VL reasons risk from the written policy",
       monitor_curframe: "Current frame", monitor_verdict: "VLM safety verdict", monitor_feed: "Live event feed",
+      w_iam: "I am", w_alerts: "Safety alerts", w_tasks: "My scheduled tasks",
+      w_ack: "Acknowledge", w_resolve: "Resolve", w_escalate: "Escalate", w_done: "Mark done",
+      w_caughtup: "✓ All caught up — no alerts for you", w_unread: "unread", w_due: "Due",
+      w_acked: "acknowledged", w_resolved: "resolved", w_escalated: "escalated", w_donestate: "done",
+      panel_delivery: "Alert delivery & acknowledgment",
     },
     zh: {
       choose_view: "自主安全员 · 选择视图",
@@ -42,6 +47,11 @@
       none_open: "无未关闭 ✅", loading: "加载中…",
       monitor_sub: "自主安全员 · Qwen3-VL 依书面规程推理风险",
       monitor_curframe: "当前帧", monitor_verdict: "VLM 安全判定", monitor_feed: "实时事件流",
+      w_iam: "我是", w_alerts: "安全告警", w_tasks: "我的排程任务",
+      w_ack: "确认知晓", w_resolve: "已处理", w_escalate: "升级班长", w_done: "标记完成",
+      w_caughtup: "✓ 全部处理完 — 暂无给你的告警", w_unread: "未读", w_due: "截止",
+      w_acked: "已确认", w_resolved: "已处理", w_escalated: "已升级", w_donestate: "已完成",
+      panel_delivery: "告警送达与确认",
     },
     es: {
       choose_view: "Oficial de seguridad autónomo · elija su vista",
@@ -62,6 +72,11 @@
       none_open: "Ninguna abierta ✅", loading: "Cargando…",
       monitor_sub: "Oficial de seguridad autónomo · Qwen3-VL razona el riesgo según la política escrita",
       monitor_curframe: "Cuadro actual", monitor_verdict: "Veredicto de seguridad (VLM)", monitor_feed: "Eventos en vivo",
+      w_iam: "Soy", w_alerts: "Alertas de seguridad", w_tasks: "Mis tareas programadas",
+      w_ack: "Confirmar", w_resolve: "Resuelto", w_escalate: "Escalar", w_done: "Marcar hecho",
+      w_caughtup: "✓ Todo al día — sin alertas para ti", w_unread: "sin leer", w_due: "Vence",
+      w_acked: "confirmado", w_resolved: "resuelto", w_escalated: "escalado", w_donestate: "hecho",
+      panel_delivery: "Entrega y confirmación de alertas",
     },
   };
   let cur = localStorage.getItem("sc_lang") || "en";

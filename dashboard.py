@@ -13,10 +13,11 @@ import threading
 from copy import deepcopy
 from pathlib import Path
 
-from flask import Flask, jsonify, send_from_directory, Response
+from flask import Flask, jsonify, send_from_directory, Response, request
 
 import config
 import kpi_report
+import notify
 from main import run_shift, run_video, run_videos, DEFAULT_CONTEXT, VIDEO_CONTEXT, VIDEO_EXT
 
 app = Flask(__name__)
@@ -61,6 +62,7 @@ def _on_update(payload):
             "judgment": payload["judgment"],
             "actions": payload["actions"],
         })
+    notify.push_alert(payload["judgment"], payload.get("actions"))  # route to worker inboxes
 
 
 def _on_done(report):
@@ -102,8 +104,10 @@ def start_shift():
             return False
         STATE.update({"status": "running", "index": 0, "total": 0,
                       "current_frame": None, "current_annotated": None,
+                      "current_clip": None,
                       "latest": None, "latest_actions": [],
                       "events": [], "report_md": None, "error": None})
+    notify.reset()   # clear worker inboxes for the new shift
     _thread = threading.Thread(target=_run, daemon=True)
     _thread.start()
     return True
@@ -180,6 +184,28 @@ def api_plan():
     txt = p.read_text(encoding="utf-8") if p.exists() else \
         "No weekly plan yet. Generate it with:  python planner.py"
     return Response(txt, mimetype="text/plain")
+
+
+@app.get("/api/workers")
+def api_workers():
+    return jsonify(notify.WORKERS)
+
+
+@app.get("/api/inbox")
+def api_inbox():
+    return jsonify(notify.inbox(request.args.get("worker", "sam")))
+
+
+@app.post("/api/inbox/ack")
+def api_inbox_ack():
+    d = request.get_json(force=True, silent=True) or {}
+    ok = notify.set_state(d.get("worker"), d.get("id", ""), d.get("action", "acknowledged"))
+    return jsonify({"ok": ok})
+
+
+@app.get("/api/deliveries")
+def api_deliveries():
+    return jsonify(notify.deliveries())
 
 
 if __name__ == "__main__":
