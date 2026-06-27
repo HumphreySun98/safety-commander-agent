@@ -228,8 +228,10 @@ def api_detect():
     try:
         if main.YOLO_URL:                                   # detect on B's 4090
             import requests
+            # high-frequency overlay path: we only draw from `detections`, so ask the
+            # service to SKIP the ~400KB annotated image (saves ~95% of tunnel bandwidth)
             data = requests.post(main.YOLO_URL.rstrip("/") + "/detect",
-                                 json={"image_b64": img_b64}, timeout=15).json()
+                                 json={"image_b64": img_b64, "annotate": False}, timeout=15).json()
             perc = data.get("perception") if isinstance(data.get("perception"), dict) \
                 else (data if "derived" in data else {})
         elif hasattr(main.perception, "detect_for_frame"):  # detect locally
