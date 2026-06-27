@@ -165,15 +165,16 @@ def _format_perception(perception) -> str:
     )
 
 
-def _format_user_text(policy_text, shift_context, perception=None) -> str:
+def _format_user_text(policy_text, shift_context, perception=None, knowledge="") -> str:
     ctx = shift_context or {}
     ctx_lines = "\n".join(f"- {k}: {v}" for k, v in ctx.items()) or "- (none provided)"
     return (
         "SAFETY POLICY (single source of truth — judge strictly against THIS text):\n"
         "----------------------------------------------------------------------\n"
         f"{policy_text}\n"
-        "----------------------------------------------------------------------\n\n"
-        "CURRENT SHIFT CONTEXT:\n"
+        "----------------------------------------------------------------------\n"
+        f"{knowledge or ''}"
+        "\nCURRENT SHIFT CONTEXT:\n"
         f"{ctx_lines}\n"
         f"{_format_perception(perception)}\n"
         "GROUNDING: Base every claim ONLY on what is clearly visible in THIS frame. "
@@ -247,7 +248,8 @@ def _normalize(parsed, frame_name, t0, raw, zone=""):
     return out
 
 
-def judge_frame(image_path, policy_text, shift_context=None, perception=None) -> dict:
+def judge_frame(image_path, policy_text, shift_context=None, perception=None,
+                knowledge="") -> dict:
     """
     Feed (camera frame + safety policy + shift context [+ optional YOLO facts]) to
     Qwen3-VL and return a structured, policy-grounded safety judgment.
@@ -272,7 +274,8 @@ def judge_frame(image_path, policy_text, shift_context=None, perception=None) ->
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": [
-            {"type": "text", "text": _format_user_text(policy_text, shift_context, perception)},
+            {"type": "text",
+             "text": _format_user_text(policy_text, shift_context, perception, knowledge)},
             {"type": "image_url", "image_url": {"url": data_url}},
         ]},
     ]
@@ -300,7 +303,8 @@ def judge_frame(image_path, policy_text, shift_context=None, perception=None) ->
     return _normalize(parsed, frame_name, t0, raw, zone=zone)
 
 
-def _format_clip_text(policy_text, shift_context, perception, n_frames, window_sec) -> str:
+def _format_clip_text(policy_text, shift_context, perception, n_frames, window_sec,
+                      knowledge="") -> str:
     preamble = (
         f"You are watching {n_frames} CONSECUTIVE frames from ONE camera, in time order, "
         f"spanning about {window_sec:.1f} seconds. Judge the BEHAVIOUR OVER TIME, not a single "
@@ -309,11 +313,11 @@ def _format_clip_text(policy_text, shift_context, perception, n_frames, window_s
         "overloaded load in transit; someone leaving a hazard zone is the situation improving. "
         "Decide the risk from how the scene EVOLVES across the frames.\n\n"
     )
-    return preamble + _format_user_text(policy_text, shift_context, perception)
+    return preamble + _format_user_text(policy_text, shift_context, perception, knowledge)
 
 
 def judge_clip(frames, policy_text, shift_context=None, perception=None,
-               window_sec=2.0, label=None, max_dim=512) -> dict:
+               window_sec=2.0, label=None, max_dim=512, knowledge="") -> dict:
     """
     Temporal version of judge_frame: feed a SEQUENCE of consecutive frames (a short
     clip) to Qwen3-VL so it can reason about motion / behaviour over time (near-miss
@@ -330,7 +334,8 @@ def judge_clip(frames, policy_text, shift_context=None, perception=None,
     except Exception as e:
         return _fallback(name, f"image_error: {e}", t0, zone=zone)
 
-    text = _format_clip_text(policy_text, shift_context, perception, len(urls), window_sec)
+    text = _format_clip_text(policy_text, shift_context, perception, len(urls),
+                             window_sec, knowledge)
     content = [{"type": "text", "text": text}]
     content += [{"type": "image_url", "image_url": {"url": u}} for u in urls]
     messages = [{"role": "system", "content": SYSTEM_PROMPT},

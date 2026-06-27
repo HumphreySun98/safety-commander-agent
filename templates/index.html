@@ -135,6 +135,7 @@ function renderVerdict(j, acts){
     </div>
     <div class="kv"><div class="k">Observation</div><div class="v">${esc(j.observation)}</div></div>
     <div class="kv"><div class="k">Policy clause cited</div><div class="clause">${esc(j.policy_clause)}</div></div>
+    ${(j.retrieved&&j.retrieved.length)?`<div class="kv"><div class="k">Grounded in · RAG-retrieved regs</div><div class="actions">${[...new Set(j.retrieved)].map(r=>`<span class="chip">📚 ${esc(r)}</span>`).join('')}</div></div>`:''}
     <div class="kv"><div class="k">Reasoning</div><div class="v">${esc(j.reasoning)}</div></div>
     ${recs?`<div class="kv"><div class="k">Recommended actions</div><div class="v"><ul style="margin:.2em 0;padding-left:18px">${recs}</ul></div></div>`:''}
     <div class="kv"><div class="k">Actions triggered</div><div class="actions">${chips||'<span class="chip">none</span>'}</div></div>

@@ -3,6 +3,7 @@ python-dotenv>=1.0
 flask>=3.0
 Pillow>=10.0
 requests>=2.31
+scikit-learn>=1.3      # RAG retrieval (TF-IDF) over knowledge/
 
 # Optional — only needed by extract_frames.py to pull frames from a demo video.
 # imageio-ffmpeg bundles its own ffmpeg binary (no system install needed).

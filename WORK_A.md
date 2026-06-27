@@ -31,6 +31,7 @@
 |---|---|---|
 | [config.py](config.py) | 配置 | 从 `.env` 读 VLM endpoint/key/model；路径；`load_policy()`；perception/annotated 目录 |
 | [safety_policy.txt](safety_policy.txt) | **规程（唯一事实来源）** | 8 节：PPE / 叉车 / 火烟 / 泼洒 / 护栏 LOTO / 限制行为 / 区域豁免 / **风险分级 none→critical**；可被运营经理随时编辑 |
+| `knowledge/` + [rag.py](rag.py) | **法规知识库 + RAG** | OSHA 1910 条款 / 本厂 SOP / 化学品 SDS；TF-IDF(sklearn) **按场景检索**相关法规喂给 VLM，模型**引用具体标准**（如 1910.178(n)(6)）；只检索知识、不判风险；`SC_RAG=0` 可关；空库自动 no-op |
 | [vlm_judge.py](vlm_judge.py) | **大脑** | `judge_frame()` 单帧；`judge_clip()` 多帧时序；强制结构化 JSON + 容错解析 + JSON-mode 兜底；grounding 防幻觉；`temperature=0` 可复现；`perception=` 融合 YOLO 事实 |
 | [actions.py](actions.py) | 分级动作 | `create_safety_log / notify_supervisor / assign_corrective_action / escalate_incident / flag_area`；`dispatch()` **只按 VLM 给的等级路由，零风险判断** |
 | [shift_report.py](shift_report.py) | 交接报告 | 累积事件 → `generate_handoff()` markdown（违规/near-miss/未关闭工单/按类型分布/全量日志） |
@@ -48,6 +49,7 @@
 - **多机位整班**：对 8 个真实 CCTV 片段跑出 **26 窗口 → 5 HIGH / 11 MEDIUM / 10 NONE，5 near-miss，11 未关闭工单**，near-miss 引用 2.1/2.2/2.4。
 - **改规程翻转**（`demo_policy_flip.py`）：加 clause 2.6 → 同帧 **NONE→MEDIUM 并引用 2.6**，复现 **5/5**。
 - **perception 融合**：喂入"0.8m"事实 → 模型自主升 **HIGH** 引用 2.1（仍由模型判，非硬编码）。
+- **RAG 法规检索**：同一叉车超载帧——纯规程判 **NONE**；检索到 **OSHA 1910.178(n)(6)** 后判 **MEDIUM** 并**引用该标准**。检索准确（叉车→1910.178+SOP-FK-01；伸手进机器→1910.212）。
 
 ---
 

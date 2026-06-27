@@ -38,8 +38,10 @@ shift report), and **autonomous** (it runs watch → decide → act → report o
 ```
 frames/                 demo camera frames (static; no live camera needed)
 safety_policy.txt       the rules — single source of truth, editable by ops manager
+knowledge/              RAG corpus — OSHA standards, plant SOPs, SDS (factory regs)
+rag.py                  TF-IDF retrieval over knowledge/ (relevant regs per scene)
 config.py               env + paths + policy loader
-vlm_judge.py            ❤ judge_frame(): VLM reads policy + frame -> structured verdict
+vlm_judge.py            ❤ judge_frame()/judge_clip(): VLM reads policy + frame (+ retrieved regs)
 actions.py              guarded actions + dispatch() (routes risk level -> actions)
 shift_report.py         accumulates events -> markdown handoff report
 main.py                 the autonomous loop (headless)
@@ -47,6 +49,16 @@ dashboard.py            Flask live dashboard
 templates/index.html    single-page dark UI
 extract_frames.py       optional: sample frames from a demo video
 ```
+
+### Grounding in the factory's regulations (RAG)
+
+`safety_policy.txt` is the editable *house rules*. Behind it, `knowledge/` holds the
+actual references — OSHA 1910 standards, the plant's SOPs, and chemical SDS. For each
+frame/clip, [rag.py](rag.py) retrieves (TF-IDF) the regulations relevant to the scene and
+feeds them to the VLM, which then cites the specific standard. Example: an overloaded
+forklift the bare site policy passes is flagged **once OSHA `1910.178(n)(6)`
+(obstructed-view) is retrieved** — and the model cites it. Retrieval supplies *knowledge*;
+the VLM still decides the risk (no rules live in `rag.py`). Disable with `SC_RAG=0`.
 
 Per frame, the verdict is structured JSON:
 

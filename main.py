@@ -20,6 +20,17 @@ from vlm_judge import judge_frame
 from actions import dispatch
 from shift_report import ShiftReport
 from perception import load_perception
+from rag import retrieve_text, sources
+
+
+def _rag_query(context, perception=None, extra=""):
+    """Build a retrieval query from the zone/operations (+ YOLO labels if present)."""
+    ctx = context or {}
+    parts = [str(ctx.get("zone", "")), str(ctx.get("operations", "")), str(extra)]
+    if perception:
+        labels = sorted({d.get("label", "") for d in perception.get("detections", [])})
+        parts.append(" ".join(labels))
+    return " ".join(p for p in parts if p).strip()
 
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
@@ -62,8 +73,11 @@ def run_shift(frames_dir=None, context=None, on_update=None, on_done=None, inter
     for i, frame in enumerate(frames, 1):
         print(f"\n[{i}/{len(frames)}] {frame.name}")
         perc = load_perception(frame.name)   # YOLO facts if the perception layer ran; else None
-        judgment = judge_frame(str(frame), policy, context, perception=perc)
+        query = _rag_query(context, perc)
+        knowledge = retrieve_text(query, k=3)            # RAG: relevant OSHA / SOP / SDS
+        judgment = judge_frame(str(frame), policy, context, perception=perc, knowledge=knowledge)
         judgment.setdefault("timestamp", datetime.now().isoformat(timespec="seconds"))
+        judgment["retrieved"] = sources(query, k=3)
         print(f"  👁️  {str(judgment.get('risk_level','?')).upper():8} "
               f"{judgment.get('hazard_type')} | "
               f"clause: {str(judgment.get('policy_clause'))[:70]}")
@@ -177,8 +191,12 @@ def run_videos(video_paths, context=None, on_update=None, on_done=None,
             idx += 1
             label = f"{name} @ {int(t)}s"
             print(f"\n[{idx}/{total}] {label}  ({len(frames)} frames)")
-            judgment = judge_clip(frames, policy, context, window_sec=window_sec, label=label)
+            query = _rag_query(context)
+            knowledge = retrieve_text(query, k=3)        # RAG: relevant OSHA / SOP / SDS
+            judgment = judge_clip(frames, policy, context, window_sec=window_sec,
+                                  label=label, knowledge=knowledge)
             judgment.setdefault("timestamp", datetime.now().isoformat(timespec="seconds"))
+            judgment["retrieved"] = sources(query, k=3)
             print(f"  👁️  {str(judgment.get('risk_level','?')).upper():8} "
                   f"{judgment.get('hazard_type')} | clause: {str(judgment.get('policy_clause'))[:60]}")
 

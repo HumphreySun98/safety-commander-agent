@@ -27,6 +27,7 @@ REPORTS_DIR    = BASE_DIR / "reports"
 POLICY_PATH    = Path(os.getenv("SAFETY_POLICY_PATH", str(BASE_DIR / "safety_policy.txt")))
 PERCEPTION_DIR = BASE_DIR / "perception"        # YOLO facts (written by perception.py)
 ANNOTATED_DIR  = BASE_DIR / "frames_annotated"  # frames with boxes drawn
+KNOWLEDGE_DIR  = BASE_DIR / "knowledge"          # RAG corpus: OSHA / SOPs / SDS
 
 # --- Runtime tuning -------------------------------------------------------------
 FRAME_INTERVAL_SEC = float(os.getenv("FRAME_INTERVAL_SEC", "2.0"))   # demo pacing
