@@ -256,7 +256,7 @@ def run_videos(video_paths, context=None, on_update=None, on_done=None,
             report.add(judgment, actions)
             if on_update:
                 on_update({"index": idx, "total": total, "frame": rep_name or label,
-                           "annotated": rep_name, "judgment": judgment,
+                           "annotated": rep_name, "clip": p.name, "judgment": judgment,
                            "actions": actions, "report": report})
             if interval and idx < total:
                 time.sleep(interval)

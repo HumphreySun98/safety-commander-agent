@@ -22,6 +22,7 @@ from main import run_shift, run_video, run_videos, DEFAULT_CONTEXT, VIDEO_CONTEX
 app = Flask(__name__)
 
 TPL_DIR = Path(__file__).resolve().parent / "templates"
+CLIPS_DIR = None        # set when running in video mode → served at /clip/<name>
 
 
 def _tpl(name):
@@ -34,6 +35,7 @@ STATE = {
     "index": 0, "total": 0,
     "current_frame": None,
     "current_annotated": None, # annotated frame name (boxes) if perception ran
+    "current_clip": None,      # mp4 being analysed now (for live video playback)
     "latest": None,            # latest judgment dict
     "latest_actions": [],
     "events": [],              # [{frame, judgment, actions}, ...]
@@ -50,6 +52,7 @@ def _on_update(payload):
         STATE["total"] = payload["total"]
         STATE["current_frame"] = payload["frame"]
         STATE["current_annotated"] = payload.get("annotated")
+        STATE["current_clip"] = payload.get("clip") or STATE.get("current_clip")
         STATE["latest"] = payload["judgment"]
         STATE["latest_actions"] = payload["actions"]
         STATE["events"].append({
@@ -77,6 +80,8 @@ def _run():
             with _state_lock:
                 STATE["context"] = VIDEO_CONTEXT
             vp = Path(video)
+            global CLIPS_DIR
+            CLIPS_DIR = vp if vp.is_dir() else vp.parent
             if vp.is_dir():
                 clips = sorted(str(q) for q in vp.iterdir() if q.suffix.lower() in VIDEO_EXT)
                 run_videos(clips, context=VIDEO_CONTEXT, on_update=_on_update, on_done=_on_done)
@@ -132,6 +137,13 @@ def frames(filename):
 @app.get("/annotated/<path:filename>")
 def annotated(filename):
     return send_from_directory(str(config.ANNOTATED_DIR), filename)
+
+
+@app.get("/clip/<path:filename>")
+def clip(filename):
+    if CLIPS_DIR is None:
+        return ("no clips", 404)
+    return send_from_directory(str(CLIPS_DIR), filename)
 
 
 @app.get("/api/state")
