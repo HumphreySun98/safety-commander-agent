@@ -31,6 +31,27 @@ def _load(name):
         return []
 
 
+def summarize() -> dict:
+    """Aggregated stats dict (used by planner.py to reason a weekly plan)."""
+    log = _load("safety_log.json")
+    correctives = _load("corrective_actions.json")
+    incidents = _load("incidents.json")
+    violations = [e for e in log if str(e.get("risk_level")) in VIOLATION]
+    return {
+        "observations": len(log),
+        "violations": len(violations),
+        "by_hazard": Counter(e.get("hazard_type", "unknown") for e in violations).most_common(8),
+        "by_zone": Counter((e.get("zone") or "unspecified") for e in violations).most_common(6),
+        "near_miss": sum(1 for i in incidents if i.get("incident_type") == "near_miss"),
+        "critical": sum(1 for i in incidents if i.get("incident_type") == "incident"),
+        "open_correctives": [
+            {"hazard": c.get("hazard_type"), "frame": c.get("frame"),
+             "clause": c.get("policy_clause"), "instruction": c.get("instruction")}
+            for c in correctives if c.get("status") == "open"
+        ],
+    }
+
+
 def generate_rollup(period="all logged shifts") -> str:
     log = _load("safety_log.json")            # one record per observed frame
     correctives = _load("corrective_actions.json")
