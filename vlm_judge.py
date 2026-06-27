@@ -115,7 +115,36 @@ def _extract_json(text):
     return None
 
 
-def _format_user_text(policy_text, shift_context) -> str:
+def _format_perception(perception) -> str:
+    """Render the on-prem YOLO 'derived' facts. These corroborate what the model
+    sees; the model still decides risk from the policy (no risk level is passed in)."""
+    if not perception:
+        return ""
+    d = perception.get("derived", {}) or {}
+    lines = []
+    if d.get("people") is not None:
+        lines.append(f"- people detected: {d['people']}")
+    if d.get("forklifts") is not None:
+        lines.append(f"- forklifts detected: {d['forklifts']}")
+    if d.get("min_person_forklift_dist_m") is not None:
+        lines.append(f"- closest person-to-forklift distance: {d['min_person_forklift_dist_m']} m")
+    if d.get("ppe_missing"):
+        lines.append(f"- PPE missing on someone: {', '.join(d['ppe_missing'])}")
+    for key, label in [("fire", "fire"), ("smoke", "smoke"),
+                       ("spill", "spill"), ("phone_in_use", "phone in use")]:
+        if key in d:
+            lines.append(f"- {label}: {'yes' if d[key] else 'no'}")
+    if not lines:
+        return ""
+    return (
+        "\nDETECTOR FACTS (from an on-prem YOLO model on the cameras — these are "
+        "measurements to corroborate what you see, NOT a verdict. You still decide "
+        "the risk level yourself, strictly from the policy):\n"
+        + "\n".join(lines) + "\n"
+    )
+
+
+def _format_user_text(policy_text, shift_context, perception=None) -> str:
     ctx = shift_context or {}
     ctx_lines = "\n".join(f"- {k}: {v}" for k, v in ctx.items()) or "- (none provided)"
     return (
@@ -124,7 +153,8 @@ def _format_user_text(policy_text, shift_context) -> str:
         f"{policy_text}\n"
         "----------------------------------------------------------------------\n\n"
         "CURRENT SHIFT CONTEXT:\n"
-        f"{ctx_lines}\n\n"
+        f"{ctx_lines}\n"
+        f"{_format_perception(perception)}\n"
         "GROUNDING: Base every claim ONLY on what is clearly visible in THIS frame. "
         "CCTV is wide-angle and low-resolution — do NOT assume a person, vehicle, or "
         "action you cannot actually see (e.g. do not claim someone is 'under a load' "
@@ -196,10 +226,14 @@ def _normalize(parsed, frame_name, t0, raw, zone=""):
     return out
 
 
-def judge_frame(image_path, policy_text, shift_context=None) -> dict:
+def judge_frame(image_path, policy_text, shift_context=None, perception=None) -> dict:
     """
-    Feed (camera frame + safety policy + shift context) to Qwen3-VL and return a
-    structured, policy-grounded safety judgment.
+    Feed (camera frame + safety policy + shift context [+ optional YOLO facts]) to
+    Qwen3-VL and return a structured, policy-grounded safety judgment.
+
+    `perception` is the optional dict from the perception layer (perception.py);
+    its 'derived' facts are shown to the model as corroborating measurements. The
+    model still decides the risk level from the policy — perception never sets it.
 
     Returns a dict with the schema keys (observation, hazard_type, risk_level,
     policy_clause, reasoning, recommended_actions) plus metadata
@@ -217,7 +251,7 @@ def judge_frame(image_path, policy_text, shift_context=None) -> dict:
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": [
-            {"type": "text", "text": _format_user_text(policy_text, shift_context)},
+            {"type": "text", "text": _format_user_text(policy_text, shift_context, perception)},
             {"type": "image_url", "image_url": {"url": data_url}},
         ]},
     ]

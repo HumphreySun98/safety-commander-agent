@@ -21,10 +21,12 @@ VLLM_KEY      = os.getenv("VLLM_KEY", "")
 VLLM_MODEL    = os.getenv("VLLM_MODEL", "Qwen/Qwen3-VL-30B-A3B-Instruct-FP8")
 
 # --- Paths ----------------------------------------------------------------------
-FRAMES_DIR  = Path(os.getenv("FRAMES_DIR", str(BASE_DIR / "frames")))
-LOGS_DIR    = BASE_DIR / "logs"
-REPORTS_DIR = BASE_DIR / "reports"
-POLICY_PATH = Path(os.getenv("SAFETY_POLICY_PATH", str(BASE_DIR / "safety_policy.txt")))
+FRAMES_DIR     = Path(os.getenv("FRAMES_DIR", str(BASE_DIR / "frames")))
+LOGS_DIR       = BASE_DIR / "logs"
+REPORTS_DIR    = BASE_DIR / "reports"
+POLICY_PATH    = Path(os.getenv("SAFETY_POLICY_PATH", str(BASE_DIR / "safety_policy.txt")))
+PERCEPTION_DIR = BASE_DIR / "perception"        # YOLO facts (written by perception.py)
+ANNOTATED_DIR  = BASE_DIR / "frames_annotated"  # frames with boxes drawn
 
 # --- Runtime tuning -------------------------------------------------------------
 FRAME_INTERVAL_SEC = float(os.getenv("FRAME_INTERVAL_SEC", "2.0"))   # demo pacing
@@ -38,6 +40,8 @@ DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
 # Make sure output dirs exist.
 LOGS_DIR.mkdir(exist_ok=True)
 REPORTS_DIR.mkdir(exist_ok=True)
+PERCEPTION_DIR.mkdir(exist_ok=True)
+ANNOTATED_DIR.mkdir(exist_ok=True)
 
 
 def load_policy() -> str:

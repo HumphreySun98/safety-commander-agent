@@ -198,8 +198,13 @@ async function tick(){
   if(s.index !== lastIndex && s.current_frame){
     lastIndex = s.index;
     const img = document.getElementById('frameImg');
-    img.src = '/frames/'+encodeURIComponent(s.current_frame)+'?t='+s.index;
-    document.getElementById('frameCap').textContent = s.current_frame;
+    // prefer the YOLO-annotated frame (boxes) when the perception layer has run
+    const base = s.current_annotated
+      ? '/annotated/'+encodeURIComponent(s.current_annotated)
+      : '/frames/'+encodeURIComponent(s.current_frame);
+    img.src = base + '?t=' + s.index;
+    document.getElementById('frameCap').textContent =
+      s.current_frame + (s.current_annotated ? '  · YOLO overlay' : '');
     renderVerdict(s.latest, s.latest_actions);
   }
   renderFeed(s.events||[]);

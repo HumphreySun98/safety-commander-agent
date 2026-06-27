@@ -13,11 +13,13 @@ Headless usage:
 import sys
 import time
 from datetime import datetime
+from pathlib import Path
 
 import config
 from vlm_judge import judge_frame
 from actions import dispatch
 from shift_report import ShiftReport
+from perception import load_perception
 
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
@@ -59,7 +61,8 @@ def run_shift(frames_dir=None, context=None, on_update=None, on_done=None, inter
 
     for i, frame in enumerate(frames, 1):
         print(f"\n[{i}/{len(frames)}] {frame.name}")
-        judgment = judge_frame(str(frame), policy, context)
+        perc = load_perception(frame.name)   # YOLO facts if the perception layer ran; else None
+        judgment = judge_frame(str(frame), policy, context, perception=perc)
         judgment.setdefault("timestamp", datetime.now().isoformat(timespec="seconds"))
         print(f"  👁️  {str(judgment.get('risk_level','?')).upper():8} "
               f"{judgment.get('hazard_type')} | "
@@ -67,9 +70,16 @@ def run_shift(frames_dir=None, context=None, on_update=None, on_done=None, inter
         actions = dispatch(judgment)
         report.add(judgment, actions)
 
+        annotated = None
+        if perc and perc.get("annotated_image"):
+            cand = config.ANNOTATED_DIR / Path(perc["annotated_image"]).name
+            if cand.exists():
+                annotated = cand.name
+
         if on_update:
             on_update({"index": i, "total": len(frames), "frame": frame.name,
-                       "judgment": judgment, "actions": actions, "report": report})
+                       "annotated": annotated, "judgment": judgment,
+                       "actions": actions, "report": report})
 
         if interval and i < len(frames):
             time.sleep(interval)

@@ -27,6 +27,7 @@ STATE = {
     "status": "idle",          # idle | running | done | error
     "index": 0, "total": 0,
     "current_frame": None,
+    "current_annotated": None, # annotated frame name (boxes) if perception ran
     "latest": None,            # latest judgment dict
     "latest_actions": [],
     "events": [],              # [{frame, judgment, actions}, ...]
@@ -42,6 +43,7 @@ def _on_update(payload):
         STATE["index"] = payload["index"]
         STATE["total"] = payload["total"]
         STATE["current_frame"] = payload["frame"]
+        STATE["current_annotated"] = payload.get("annotated")
         STATE["latest"] = payload["judgment"]
         STATE["latest_actions"] = payload["actions"]
         STATE["events"].append({
@@ -72,7 +74,8 @@ def start_shift():
         if STATE["status"] == "running":
             return False
         STATE.update({"status": "running", "index": 0, "total": 0,
-                      "current_frame": None, "latest": None, "latest_actions": [],
+                      "current_frame": None, "current_annotated": None,
+                      "latest": None, "latest_actions": [],
                       "events": [], "report_md": None, "error": None})
     _thread = threading.Thread(target=_run, daemon=True)
     _thread.start()
@@ -87,6 +90,11 @@ def index():
 @app.get("/frames/<path:filename>")
 def frames(filename):
     return send_from_directory(str(config.FRAMES_DIR), filename)
+
+
+@app.get("/annotated/<path:filename>")
+def annotated(filename):
+    return send_from_directory(str(config.ANNOTATED_DIR), filename)
 
 
 @app.get("/api/state")

@@ -27,5 +27,15 @@ sop-sample-training-data/
 frames_cctv/
 data/
 
+# ML model weights / training artifacts (perception layer) — keep out of git.
+# NOTE: perception/*.json and frames_annotated/*.jpg ARE committed (the agent reads them).
+*.pt
+*.onnx
+*.engine
+weights/
+runs/
+datasets/
+yolo*.pt
+
 # os
 .DS_Store
