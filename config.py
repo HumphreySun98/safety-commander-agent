@@ -30,7 +30,7 @@ POLICY_PATH = Path(os.getenv("SAFETY_POLICY_PATH", str(BASE_DIR / "safety_policy
 FRAME_INTERVAL_SEC = float(os.getenv("FRAME_INTERVAL_SEC", "2.0"))   # demo pacing
 MAX_IMAGE_DIM      = int(os.getenv("MAX_IMAGE_DIM", "1024"))         # token budget
 VLM_MAX_TOKENS     = int(os.getenv("VLM_MAX_TOKENS", "800"))
-VLM_TEMPERATURE    = float(os.getenv("VLM_TEMPERATURE", "0.1"))
+VLM_TEMPERATURE    = float(os.getenv("VLM_TEMPERATURE", "0.0"))  # 0 = reproducible verdicts
 
 # --- Optional integrations ------------------------------------------------------
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")

@@ -22,9 +22,11 @@ from shift_report import ShiftReport
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
 DEFAULT_CONTEXT = {
-    "zone": "Warehouse & dock — active forklift area",
+    "zone": "Production press shop — fixed CCTV over the power-press machine cells, "
+            "the green pedestrian walkway, and the forklift aisle",
     "shift": "Day shift (06:00–14:00)",
-    "operations": "Inbound receiving, put-away, and order picking",
+    "operations": "Metal stamping / pressing; material movement by forklift; "
+                  "operators working at the press cells",
 }
 
 

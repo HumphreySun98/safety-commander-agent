@@ -119,5 +119,21 @@ python vlm_judge.py frames/01_forklift.jpg
 - Detection (YOLO) is intentionally **not** wired in — Qwen3-VL reads the raw frame
   directly. A YOLO overlay can be added later as a pre-filter if needed.
 - Frames are downscaled before sending to respect the model's token budget.
-- Demo images in `frames/` are openly licensed (Wikimedia Commons). Swap in
-  hackathon dataset clips with `extract_frames.py`.
+- `VLM_TEMPERATURE=0` by default so verdicts are reproducible for the demo.
+
+### Demo data
+
+- `frames/` — **real factory CCTV**, sampled from the Mendeley *"Video Dataset for
+  Safe and Unsafe Behaviours"* (Eskişehir press shop, CC BY 4.0). 8 camera views ×
+  3 snapshots. See [frames/SOURCES.md](frames/SOURCES.md) for attribution and the
+  camera→class mapping. Extracted with `extract_frames.py`.
+- `frames_samples/` — openly-licensed stock imagery (Wikimedia Commons) that
+  exercises the higher-severity / escalation path. Run it with
+  `python main.py frames_samples`.
+
+A note on honesty: on this low-res wide-angle CCTV the model's most common *true*
+finding is missing PPE (clause 1.1/1.2/1.3); it also clears compliant scenes
+(`none`) and flags distinct hazards (phone use 5.1, eye protection 1.3). A grounding
+instruction in the prompt keeps it from inventing people/loads it cannot see — so it
+does **not** raise false criticals. Edit `safety_policy.txt` to match a specific
+site and the verdicts shift accordingly; that is the point.

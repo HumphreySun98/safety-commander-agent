@@ -125,6 +125,12 @@ def _format_user_text(policy_text, shift_context) -> str:
         "----------------------------------------------------------------------\n\n"
         "CURRENT SHIFT CONTEXT:\n"
         f"{ctx_lines}\n\n"
+        "GROUNDING: Base every claim ONLY on what is clearly visible in THIS frame. "
+        "CCTV is wide-angle and low-resolution — do NOT assume a person, vehicle, or "
+        "action you cannot actually see (e.g. do not claim someone is 'under a load' "
+        "unless a person is visibly there). If presence, proximity, or an action is "
+        "ambiguous, choose the lower-severity reading and state the uncertainty in "
+        "'reasoning'. Reserve 'critical' for a hazard to a person you can actually see.\n\n"
         "Now analyze the attached camera frame. Return ONLY the JSON object."
     )
 

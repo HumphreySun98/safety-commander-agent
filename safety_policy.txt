@@ -17,7 +17,9 @@ SECTION 1 — PERSONAL PROTECTIVE EQUIPMENT (PPE)
 1.5 Hearing protection is required where posted (press shop, any area >85 dBA).
 1.6 EXEMPTION: The front office, training rooms, break room, and the painted
     GREEN pedestrian walkways are PPE-OPTIONAL. Absence of a hard hat or vest in
-    those areas is NOT a violation.
+    those areas is NOT a violation. This exemption applies ONLY in those named
+    areas — the production / press floor, machine cells, warehouse, and dock are
+    NEVER PPE-exempt. Do not cite 1.6 unless the person is clearly in an exempt area.
 
 ------------------------------------------------------------------------------
 SECTION 2 — POWERED INDUSTRIAL TRUCKS (FORKLIFTS) & PEDESTRIANS

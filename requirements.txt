@@ -5,5 +5,7 @@ Pillow>=10.0
 requests>=2.31
 
 # Optional — only needed by extract_frames.py to pull frames from a demo video.
-# Either install this, or have ffmpeg on PATH.
-# opencv-python-headless>=4.8
+# imageio-ffmpeg bundles its own ffmpeg binary (no system install needed).
+imageio>=2.30
+imageio-ffmpeg>=0.4
+# (alternatively: opencv-python-headless, or a system ffmpeg on PATH)

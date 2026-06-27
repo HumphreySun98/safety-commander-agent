@@ -15,5 +15,17 @@ reports/
 # the hackathon brief (large binary)
 *.pdf
 
+# large datasets — never commit these
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+Video Dataset for Safe and Unsafe Behaviours/
+sop-sample-training-data/
+frames_cctv/
+data/
+
 # os
 .DS_Store

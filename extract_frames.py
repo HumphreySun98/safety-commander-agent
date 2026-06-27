@@ -7,13 +7,48 @@ the hackathon CCTV / factory video clips into a frames/ folder.
     python extract_frames.py path/to/video.mp4
     python extract_frames.py path/to/video.mp4 --every 1.5 --out frames --max 20
 
-Tries OpenCV first; falls back to ffmpeg if it is on PATH.
+Tries imageio (with the bundled imageio-ffmpeg binary, no system install needed),
+then OpenCV, then a system ffmpeg.
 """
 import argparse
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+
+def with_imageio(video, out, every, mx):
+    """Preferred path: imageio + imageio-ffmpeg (bundles its own ffmpeg binary)."""
+    try:
+        import imageio.v2 as imageio
+        import numpy as np
+        from PIL import Image
+    except ImportError:
+        return False
+    try:
+        rdr = imageio.get_reader(str(video), "ffmpeg")
+    except Exception as e:
+        print(f"imageio could not open {video}: {e}")
+        return True
+    meta = rdr.get_meta_data()
+    fps = meta.get("fps", 25) or 25
+    step = max(1, int(fps * every))
+    saved = 0
+    for i, frame in enumerate(rdr):
+        if i % step == 0:
+            img = Image.fromarray(np.asarray(frame)).convert("RGB")
+            w, h = img.size
+            if max(w, h) > 1280:
+                s = 1280 / max(w, h); img = img.resize((int(w * s), int(h * s)), Image.LANCZOS)
+            p = out / f"frame_{saved:04d}.jpg"
+            img.save(p, "JPEG", quality=88)
+            saved += 1
+            print(f"  saved {p.name}")
+            if mx and saved >= mx:
+                break
+    rdr.close()
+    print(f"Done: {saved} frames -> {out}")
+    return True
 
 
 def with_opencv(video, out, every, mx):
@@ -71,12 +106,15 @@ def main():
     out = Path(a.out)
     out.mkdir(exist_ok=True)
 
+    if with_imageio(a.video, out, a.every, a.max):
+        return
     if with_opencv(a.video, out, a.every, a.max):
         return
     if with_ffmpeg(a.video, out, a.every, a.max):
         return
-    print("Neither OpenCV nor ffmpeg is available.\n"
-          "  pip install opencv-python-headless   (or install ffmpeg)\n"
+    print("No video backend available.\n"
+          "  pip install imageio imageio-ffmpeg   (recommended, self-contained)\n"
+          "  or pip install opencv-python-headless, or install ffmpeg\n"
           "Or just drop .jpg/.png images straight into the frames/ folder.",
           file=sys.stderr)
     sys.exit(1)
