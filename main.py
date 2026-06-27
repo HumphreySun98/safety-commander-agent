@@ -42,10 +42,17 @@ def _detect_remote(frame_path, annotate_to=None):
                       json={"image_b64": img_b64}, timeout=20)
     r.raise_for_status()
     data = r.json()
-    if annotate_to and data.get("annotated_b64"):          # save the boxed frame for the dashboard
+    # tolerate naming variants for the boxed image
+    b64 = data.get("annotated_b64") or data.get("annotated") or data.get("image_b64")
+    if annotate_to and b64:                                 # save the boxed frame for the dashboard
         with open(annotate_to, "wb") as f:
-            f.write(base64.b64decode(data["annotated_b64"]))
-    return data.get("perception") or {}
+            f.write(base64.b64decode(b64))
+    # tolerate the perception payload being nested, top-level derived, or the dict itself
+    if isinstance(data.get("perception"), dict):
+        return data["perception"]
+    if "derived" in data:
+        return data
+    return {}
 
 
 def _rag_enrich(judgment, frame_or_frames, policy, context, perception,
