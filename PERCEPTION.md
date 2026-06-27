@@ -55,11 +55,23 @@ Fill in `detect_frame(image_path)` and reuse `run()` in `perception.py`:
 python perception.py            # batch over frames/  -> perception/*.json (+ annotated)
 ```
 
-### Model
-- Train one `yolov8s` on the Roboflow sets (export each in **YOLO** format, merge):
-  PPE (hardhat / no-hardhat / vest), forklift+person, fire/smoke, spill, phone.
-  On a 4090 this is minutes. Or start from COCO (`person`) + a hardhat model and
-  iterate. Put weights in `weights/` (git-ignored).
+### Model — try READY WEIGHTS first; datasets only if they underperform on our frames
+COCO has `person` but **NOT `forklift`** — don't expect COCO alone to do the near-miss
+line. Fastest path = load existing weights, no training, into `weights/` (git-ignored):
+- **person** → `yolov8s.pt` (COCO, auto-downloads with ultralytics)
+- **forklift** → `keremberke/yolov8s-forklift-detection` (Hugging Face, ready `.pt`, ~81 mAP@50)
+- **PPE** (hardhat / no_hardhat / vest / person / cone) →
+  `VoxDroid/Construction-Site-Safety-PPE-Detection` or
+  `snehilsanyal/Construction-Site-Safety-PPE-Detection` (pretrained weights + 10 classes)
+- **fire / smoke / spill** → P1 only; skip on the first pass.
+
+License: ultralytics/YOLOv8 is AGPL-3.0 (fine for the hackathon).
+
+Our frames are a grey Turkish press-shop CCTV — different domain from construction-site
+weights. **Only if** a ready weight is clearly wrong on `frames/`, fine-tune on the
+matching Roboflow set (export **YOLOv8 format WITH labels**), minutes on a 4090:
+- forklift+person: https://universe.roboflow.com/test-gun7j/project-forklift01
+- PPE: https://universe.roboflow.com/test-h7imi/hello-ogmw7
 - `ultralytics` example:
   ```python
   from ultralytics import YOLO
