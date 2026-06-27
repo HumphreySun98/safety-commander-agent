@@ -10,3 +10,6 @@ scikit-learn>=1.3      # RAG retrieval (TF-IDF) over knowledge/
 imageio>=2.30
 imageio-ffmpeg>=0.4
 # (alternatively: opencv-python-headless, or a system ffmpeg on PATH)
+
+# Optional — only for app_launcher.py (run the dashboard as a native desktop window).
+# pywebview>=4.0

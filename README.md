@@ -108,6 +108,15 @@ SC_VIDEO=demo_clips python dashboard.py                         # video: 8-camer
 # open http://localhost:8000
 ```
 
+**Run as a desktop app** (looks like a product on the big screen):
+
+```bash
+pip install pywebview
+python app_launcher.py                       # native window, no browser chrome
+# zero-setup fallback: python dashboard.py & then a chromeless browser window:
+#   macOS: open -na "Google Chrome" --args --app=http://localhost:8000   (or F11 fullscreen)
+```
+
 The dashboard shows, in real time: the current frame, the VLM verdict, the **cited
 policy clause**, the risk level (colour-coded), the actions triggered, the live
 event feed, and the final shift handoff report.
