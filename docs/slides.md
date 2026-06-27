@@ -53,7 +53,8 @@ only (see `docs/eval.md`). Judged by operations managers.
 - **Evidence (`docs/eval.md`):**
   - **0 false criticals** (video/temporal; single-frame had 4)
   - forklift near-miss caught at HIGH, cites **OSHA 1910.178**, ~**4 s**/window
-  - detection: **100% forklift precision (0/16 FP)**, measured **2.1 m** near-miss
+  - detection: **18/21 forklift precision** (money-shot frames clean; 3 FP = one camera's press
+    angle), 3/4 recall, measured **2.1 m** near-miss
 
 *Notes:* This is the climax — run `demo_policy_flip.py`, pause, "I didn't touch a line of code."
 

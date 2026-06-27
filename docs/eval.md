@@ -10,10 +10,10 @@ keremberke YOLO, forklift single-class confidence ≥ 0.8 (person 0.25).
 
 | metric | value |
 |---|---|
-| forklift precision (press-machine frames) | **0/16 false positives = 100%** (presses never misjudged) |
-| forklift recall (true-forklift frames) | **6/7** (only cam8_t3 @ 0.75 < 0.8 threshold) |
-| money-shot confidence | forklift 0.87 + operator |
-| measured nearest person–forklift distance | **2.1 m** (cam8_t1), 8.4 m (cam1_t3) |
+| forklift recall (true-forklift frames) | **3/4** (misses cam8_t3 @ 0.75 < 0.8 threshold) |
+| forklift precision | **18/21** — 3 false positives, **all on cam1** (a press at one camera angle scores 0.83–0.87 = the money-shot score, so no threshold separates them) |
+| money-shot frames | **clean**: cam7_overload 0.87, cam8_t1 0.92, cam8_t2 0.90 |
+| measured person–forklift distance | **2.1 m** (cam8_t1), **5.9 m** (cam8) — drive correct verdicts; ~half of pairs read 0.0 m (2D box overlap) |
 
 *Honest: distance is a documented px→m approximation (person-height ground scale); no GT
 distance, so we report measured values, not error.*
@@ -43,7 +43,8 @@ Per clip, peak severity over **all** windows (continuous monitoring). RAG off (m
 - **Forklift near-misses caught at HIGH**, citing the policy clause (2.1) **and the OSHA standard**
   (1910.178) — auditability on the record.
 - **~4 s/window** latency — feasible for live monitoring.
-- Detection: **100% forklift precision (0/16 FP)**, 6/7 recall, **measured 2.1 m** near-miss distance.
+- Detection: **18/21 forklift precision** (money-shot frames clean; the 3 FP are one camera's
+  press angle), **3/4 recall**, **measured 2.1 m** near-miss distance.
 
 ## 4. Honest limitations (say these — don't get caught)
 - **Open machine-guard detection is weak** (missed the open-panel clip) — needs a guard-state model.
@@ -51,6 +52,10 @@ Per clip, peak severity over **all** windows (continuous monitoring). RAG off (m
   clips, which is arguably correct, not a miss.
 - Occasional **shared-endpoint slowness/error** → this is exactly why we built the local-VLM
   fallback (D5).
+- **cam1 forklift false-positive:** a press at cam1's angle is detected as a forklift at 0.83–0.87
+  (= the money-shot score, so no threshold fixes it without killing real detections). The
+  money-shot frames (cam7/cam8) are clean. **Demo handling:** use cam7+cam8 for the forklift/
+  distance story; show cam1 only for its walkway/PPE behaviour, not its forklift box.
 
 ## 5. What to claim on stage
 > "On the forklift near-miss line — the injury-causing events — it catches them, cites the OSHA

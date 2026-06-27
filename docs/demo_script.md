@@ -12,6 +12,10 @@ Judged by operations managers. Lead with the strong, true lines (see `docs/eval.
       Reliable in isolation (3/3). **Record a clean run as backup.** If it ever comes up
       MEDIUM→MEDIUM live, pivot: "and it now cites the exact clause I added — 2.6" (always true).
 - [ ] Have ready in tabs/windows: dashboard · a terminal · annotated `frames_annotated/cam8_t1.jpg` (red 2.1 m line) · `docs/eval.md`.
+- [ ] **Clip selection (live YOLO):** forklift/distance story = **cam7 + cam8 only** (clean). On the
+      4090, cam1's press is mis-boxed as a forklift — for the multi-cam loop, exclude cam1
+      (`mkdir demo_live && cp demo_clips/cam{2..8}*.mp4 demo_live` → `SC_VIDEO=demo_live`), or show
+      cam1 only for its walkway/PPE point, not its forklift box.
 - [ ] Backup: a screen recording of the full run (in case the shared endpoint stalls; B's local-VLM fallback = break-glass, switch via one `.env` line).
 - [ ] Roles: one **drives** (clicks/types), one **narrates**.
 
