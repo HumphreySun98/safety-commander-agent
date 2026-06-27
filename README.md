@@ -90,7 +90,7 @@ The model endpoint (OpenAI-compatible Qwen3-VL) and key come from the hackathon 
 
 ```bash
 python main.py                              # static frames (single-frame judging)
-python main.py demo_clips/forklift_overload.mp4   # VIDEO: one clip, temporal judging
+python main.py demo_clips/cam7_forklift_overload.mp4   # VIDEO: one clip, temporal judging
 python main.py demo_clips/                   # VIDEO: all 8 cameras as ONE shift
 ```
 
@@ -103,7 +103,7 @@ overloaded load tilting in transit). Single frames miss these; the clip catches 
 
 ```bash
 python dashboard.py                                          # static frames
-SC_VIDEO=demo_clips/forklift_overload.mp4 python dashboard.py   # video: one clip
+SC_VIDEO=demo_clips/cam7_forklift_overload.mp4 python dashboard.py   # video: one clip
 SC_VIDEO=demo_clips python dashboard.py                         # video: 8-camera shift
 # open http://localhost:8000
 ```

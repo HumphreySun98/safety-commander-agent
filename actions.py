@@ -125,6 +125,14 @@ def flag_area(judgment) -> dict:
 
 _RISK_COLOR = {"none": "#6b7280", "low": "#22c55e", "medium": "#eab308",
                "high": "#f97316", "critical": "#ef4444"}
+_RISK_ORDER = ["none", "low", "medium", "high", "critical"]
+
+
+def _meets_threshold(risk):
+    """Channel pings only at SLACK_MIN_LEVEL+ (medium etc. still logged + ticketed)."""
+    def idx(r):
+        return _RISK_ORDER.index(r) if r in _RISK_ORDER else 0
+    return idx(str(risk).lower()) >= idx(config.SLACK_MIN_LEVEL.lower())
 
 
 def _post(url, payload):
@@ -147,6 +155,9 @@ def _post_webhooks(judgment, message) -> dict:
     sent = {}
     risk = str(judgment.get("risk_level", "")).lower()
     color = _RISK_COLOR.get(risk, "#6b7280")
+
+    if not _meets_threshold(risk):     # below SLACK_MIN_LEVEL -> no external ping
+        return sent
 
     if config.SLACK_WEBHOOK_URL:
         acts = "; ".join(judgment.get("recommended_actions") or []) or "—"

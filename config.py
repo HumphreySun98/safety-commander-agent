@@ -38,6 +38,8 @@ VLM_TEMPERATURE    = float(os.getenv("VLM_TEMPERATURE", "0.0"))  # 0 = reproduci
 # --- Optional integrations ------------------------------------------------------
 SLACK_WEBHOOK_URL   = os.getenv("SLACK_WEBHOOK_URL", "")    # supervisor alerts -> Slack
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")  # fallback channel
+SLACK_MIN_LEVEL     = os.getenv("SLACK_MIN_LEVEL", "high")  # only ping channel at this level+
+                                                            # (medium still logged + ticketed)
 
 # Make sure output dirs exist.
 LOGS_DIR.mkdir(exist_ok=True)
