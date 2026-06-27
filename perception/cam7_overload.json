@@ -2,16 +2,6 @@
   "frame": "cam7_overload.jpg",
   "detections": [
     {
-      "label": "forklift",
-      "bbox": [
-        652,
-        184,
-        391,
-        357
-      ],
-      "conf": 0.87
-    },
-    {
       "label": "person",
       "bbox": [
         821,
@@ -20,6 +10,16 @@
         125
       ],
       "conf": 0.27
+    },
+    {
+      "label": "forklift",
+      "bbox": [
+        652,
+        184,
+        391,
+        357
+      ],
+      "conf": 0.87
     }
   ],
   "derived": {

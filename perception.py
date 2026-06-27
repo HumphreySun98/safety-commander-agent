@@ -177,6 +177,25 @@ def _box_gap_px(b1, b2):
     return math.hypot(dx, dy)
 
 
+def _nearest_person_forklift(detections):
+    """Return (dist_m, person_det, forklift_det) for the closest pair, scaling
+    pixels to metres via a standing person's height. (None, None, None) if no pair.
+    Shared by compute_derived and the annotation overlay so they agree exactly."""
+    persons = [d for d in detections if d["label"] == "person"]
+    forklifts = [d for d in detections if d["label"] == "forklift"]
+    best, bp, bf = None, None, None
+    for p in persons:
+        ph = p["bbox"][3]
+        if ph <= 0:
+            continue
+        mpp = PERSON_HEIGHT_M / ph
+        for f in forklifts:
+            dist_m = _box_gap_px(p["bbox"], f["bbox"]) * mpp
+            if best is None or dist_m < best:
+                best, bp, bf = dist_m, p, f
+    return (round(best, 1) if best is not None else None), bp, bf
+
+
 # --- derived facts (counts / distance / PPE / hazards) ---------------------
 
 def compute_derived(detections, capabilities):
@@ -198,17 +217,8 @@ def compute_derived(detections, capabilities):
     # closest person<->forklift distance, in metres (rough ground-plane scale:
     # a standing person ~PERSON_HEIGHT_M tall sets metres-per-pixel locally).
     if "person" in capabilities and "forklift" in capabilities:
-        best = None
-        for p in persons:
-            ph = p["bbox"][3]
-            if ph <= 0:
-                continue
-            mpp = PERSON_HEIGHT_M / ph
-            for f in forklifts:
-                dist_m = _box_gap_px(p["bbox"], f["bbox"]) * mpp
-                best = dist_m if best is None else min(best, dist_m)
-        derived["min_person_forklift_dist_m"] = (round(best, 1)
-                                                 if best is not None else None)
+        dist_m, _, _ = _nearest_person_forklift(detections)
+        derived["min_person_forklift_dist_m"] = dist_m
 
     # PPE missing: a no_hardhat / no_vest box overlapping a person.
     if {"no_hardhat", "no_vest"} & capabilities:
@@ -241,8 +251,16 @@ _COLORS = {  # BGR
 }
 
 
-def _annotate(image_path, detections, out_path):
-    """Draw labelled boxes for the dashboard. Returns the output path, or None."""
+def _center(box):
+    x, y, w, h = box
+    return int(x + w / 2), int(y + h / 2)
+
+
+def _annotate(image_path, detections, out_path, pair=None):
+    """Draw labelled boxes for the dashboard, plus (if `pair` given) a person<->
+    forklift distance line + "X.X m" label — the crown-jewel proximity fact made
+    visible on the big screen. `pair` = (dist_m, person_det, forklift_det).
+    Returns the output path, or None."""
     import cv2
     img = cv2.imread(str(image_path))
     if img is None:
@@ -257,6 +275,23 @@ def _annotate(image_path, detections, out_path):
         cv2.rectangle(img, (x, ty - th - 3), (x + tw, ty + 2), color, -1)
         cv2.putText(img, tag, (x, ty), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                     (0, 0, 0), 1, cv2.LINE_AA)
+
+    # distance overlay: line between the nearest person & forklift + metre label
+    if pair and pair[0] is not None and pair[1] and pair[2]:
+        dist_m, p, f = pair
+        pc, fc = _center(p["bbox"]), _center(f["bbox"])
+        line_col = (0, 0, 255) if dist_m < 3.0 else (0, 215, 255)  # red if <3 m
+        cv2.line(img, pc, fc, line_col, 2, cv2.LINE_AA)
+        cv2.circle(img, pc, 4, line_col, -1)
+        cv2.circle(img, fc, 4, line_col, -1)
+        mid = ((pc[0] + fc[0]) // 2, (pc[1] + fc[1]) // 2)
+        label = f"{dist_m} m"
+        (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
+        bx, by = mid[0] - tw // 2, mid[1]
+        cv2.rectangle(img, (bx - 4, by - th - 6), (bx + tw + 4, by + 4), line_col, -1)
+        cv2.putText(img, label, (bx, by), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
+                    (0, 0, 0), 2, cv2.LINE_AA)
+
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(out_path), img)
     return out_path
@@ -294,8 +329,10 @@ def detect_frame(image_path) -> dict:
 
     derived = compute_derived(detections, caps)
 
+    pair = _nearest_person_forklift(detections)   # (dist_m, person, forklift)
     annotated_rel = f"{ANNOTATED_DIR.name}/{frame_name}"
-    annotated = _annotate(image_path, detections, ANNOTATED_DIR / frame_name)
+    annotated = _annotate(image_path, detections, ANNOTATED_DIR / frame_name,
+                          pair=pair)
 
     return {
         "frame": frame_name,
