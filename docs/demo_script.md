@@ -6,7 +6,11 @@ Judged by operations managers. Lead with the strong, true lines (see `docs/eval.
 ## Pre-flight (do BEFORE you go on)
 - [ ] Warm-run everything once on the **real 30B endpoint** (so first calls are cached/fast).
 - [ ] `SC_VIDEO=demo_clips python dashboard.py` → http://localhost:8000 loads, loop streams.
-- [ ] `python demo_policy_flip.py` prints NONE→MEDIUM (climax works).
+- [ ] `python demo_policy_flip.py` prints NONE→MEDIUM (climax works). **Run it STANDALONE**
+      (not while the dashboard loop is hammering the endpoint — concurrent load can make
+      Policy A flag the operator's PPE → MEDIUM→MEDIUM instead of the clean NONE→MEDIUM).
+      Reliable in isolation (3/3). **Record a clean run as backup.** If it ever comes up
+      MEDIUM→MEDIUM live, pivot: "and it now cites the exact clause I added — 2.6" (always true).
 - [ ] Have ready in tabs/windows: dashboard · a terminal · annotated `frames_annotated/cam8_t1.jpg` (red 2.1 m line) · `docs/eval.md`.
 - [ ] Backup: a screen recording of the full run (in case the shared endpoint stalls; B's local-VLM fallback = break-glass, switch via one `.env` line).
 - [ ] Roles: one **drives** (clicks/types), one **narrates**.
