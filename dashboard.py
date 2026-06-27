@@ -69,6 +69,10 @@ def _on_done(report):
 def _run():
     try:
         video = os.getenv("SC_VIDEO")          # SC_VIDEO=clip.mp4 (or a folder of clips)
+        if not video:                          # default to REAL-TIME VIDEO over demo_clips/ if present
+            d = Path(__file__).resolve().parent / "demo_clips"
+            if d.is_dir() and any(q.suffix.lower() in VIDEO_EXT for q in d.iterdir()):
+                video = str(d)
         if video:
             with _state_lock:
                 STATE["context"] = VIDEO_CONTEXT

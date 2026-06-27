@@ -1,39 +1,43 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"/>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>SafetyCommander</title>
-<style>
-  :root{--bg:#0b0e13;--panel:#141923;--line:#252d3b;--txt:#e6eaf0;--muted:#8a94a6;--accent:#7c5cff;}
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);min-height:100vh;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative}
-  .top{position:absolute;top:16px;right:18px}
-  h1{font-size:30px;margin:0} h1 .b{color:var(--accent)}
-  .sub{color:var(--muted);margin-bottom:30px}
-  .cards{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;padding:0 20px}
-  a.card{width:300px;background:var(--panel);border:1px solid var(--line);border-radius:16px;
-    padding:30px 26px;text-decoration:none;color:var(--txt);transition:.15s;display:block}
-  a.card:hover{border-color:var(--accent);transform:translateY(-3px)}
-  .ic{font-size:42px} .ct{font-size:22px;font-weight:700;margin:12px 0 6px}
-  .cd{color:var(--muted);font-size:14px;line-height:1.5}
-  .foot{color:var(--muted);font-size:12px;margin-top:34px;text-align:center;max-width:560px;padding:0 20px}
-</style></head>
-<body>
-  <div class="top"><span id="langsw"></span></div>
-  <h1>🦺 Safety<span class="b">Commander</span></h1>
-  <div class="sub" data-i18n="choose_view">Autonomous safety officer · choose your view</div>
-  <div class="cards">
-    <a class="card" href="/worker">
-      <div class="ic">👷</div>
-      <div class="ct" data-i18n="worker_title">Worker · Floor</div>
-      <div class="cd" data-i18n="worker_desc">Floor status, alerts to act on, your corrective tasks, today's safety focus.</div>
-    </a>
-    <a class="card" href="/manager">
-      <div class="ic">📊</div>
-      <div class="ct" data-i18n="manager_title">Manager · Operations</div>
-      <div class="cd" data-i18n="manager_desc">Monthly KPIs, violation trends, open corrective backlog, AI weekly plan, live monitor.</div>
-    </a>
+<link rel="stylesheet" href="/static/vendor/tabler.min.css"/>
+<style>:root{--tblr-font-sans-serif:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}</style>
+</head>
+<body class="d-flex flex-column" data-bs-theme="dark">
+<div class="page page-center">
+  <div class="container container-tight py-4">
+    <div class="text-end mb-3"><span id="langsw"></span></div>
+    <div class="text-center mb-4">
+      <h1 class="navbar-brand-autodark fs-1 mb-1">🦺 Safety<span class="text-primary">Commander</span></h1>
+      <p class="text-secondary" data-i18n="choose_view">Autonomous safety officer · choose your view</p>
+    </div>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <a href="/worker" class="card card-link card-link-pop h-100">
+          <div class="card-body text-center">
+            <div style="font-size:42px">👷</div>
+            <h2 class="mt-2 mb-1" data-i18n="worker_title">Worker · Floor</h2>
+            <p class="text-secondary mb-0" data-i18n="worker_desc">Floor status, alerts to act on, your corrective tasks, today's safety focus.</p>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-6">
+        <a href="/manager" class="card card-link card-link-pop h-100">
+          <div class="card-body text-center">
+            <div style="font-size:42px">📊</div>
+            <h2 class="mt-2 mb-1" data-i18n="manager_title">Manager · Operations</h2>
+            <p class="text-secondary mb-0" data-i18n="manager_desc">Monthly KPIs, violation trends, open corrective backlog, AI weekly plan, live monitor.</p>
+          </div>
+        </a>
+      </div>
+    </div>
+    <p class="text-center text-secondary mt-4 mb-0 small" data-i18n="footer">VLM reasons risk from the policy · perception measures · RAG cites OSHA · actions auto-fire</p>
   </div>
-  <div class="foot" data-i18n="footer">VLM reasons risk from the policy · perception measures · RAG cites OSHA · actions auto-fire</div>
-  <script src="/static/i18n.js"></script>
-</body></html>
+</div>
+<script src="/static/i18n.js"></script>
+</body>
+</html>

@@ -4,56 +4,28 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>SafetyCommander — Autonomous Safety Officer</title>
+<link rel="stylesheet" href="/static/vendor/tabler.min.css"/>
 <style>
-  :root{
-    --bg:#0b0e13; --panel:#141923; --panel2:#1b2230; --line:#252d3b;
-    --txt:#e6eaf0; --muted:#8a94a6; --accent:#7c5cff;
-    --none:#6b7280; --low:#22c55e; --medium:#eab308; --high:#f97316; --critical:#ef4444;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--txt);
-       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
-  header{display:flex;align-items:center;gap:16px;padding:14px 22px;
-         border-bottom:1px solid var(--line);background:#0d1117;position:sticky;top:0;z-index:5}
-  header h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
-  header .sub{color:var(--muted);font-size:12px;margin-top:2px}
-  .spacer{flex:1}
-  .pill{font-size:12px;padding:5px 11px;border-radius:999px;background:var(--panel2);
-        border:1px solid var(--line);color:var(--muted)}
-  .pill b{color:var(--txt)}
-  button{background:var(--accent);color:#fff;border:0;padding:8px 14px;border-radius:8px;
-         font-size:13px;cursor:pointer;font-weight:600}
-  button:hover{filter:brightness(1.1)}
-  .wrap{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;padding:16px;max-width:1500px;margin:0 auto}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-  .panel h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);
-            margin:0;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel2)}
-  .framebox{position:relative;background:#000;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center}
+  :root{--tblr-font-sans-serif:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+        --panel2:#1b2230;--line:#2a3342;--accent:#7c5cff;--muted:#8a94a6;}
+  .framebox{position:relative;background:#000;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;border-radius:8px;overflow:hidden}
   .framebox img{width:100%;height:100%;object-fit:contain}
-  .framecap{position:absolute;left:10px;bottom:10px;background:rgba(0,0,0,.6);
-            padding:4px 10px;border-radius:6px;font-size:12px;color:#cfd6e2}
-  .vbanner{position:absolute;top:0;left:0;right:0;padding:9px 14px;display:none;
-           align-items:center;gap:10px;font-weight:800;color:#0b0e13;
-           box-shadow:0 2px 12px rgba(0,0,0,.45)}
-  .vbanner .vlvl{font-size:12px;letter-spacing:.5px;padding:2px 9px;border-radius:6px;
-                 background:rgba(0,0,0,.28)}
+  .framecap{position:absolute;left:10px;bottom:10px;background:rgba(0,0,0,.6);padding:4px 10px;border-radius:6px;font-size:12px;color:#cfd6e2}
+  .vbanner{position:absolute;top:0;left:0;right:0;padding:9px 14px;display:none;align-items:center;gap:10px;font-weight:800;color:#0b0e13;box-shadow:0 2px 12px rgba(0,0,0,.45)}
+  .vbanner .vlvl{font-size:12px;letter-spacing:.5px;padding:2px 9px;border-radius:6px;background:rgba(0,0,0,.28)}
   .vbanner .vhaz{font-size:14px}
-  .vbanner .vcl{margin-left:auto;font-weight:600;font-size:12px;opacity:.9;max-width:52%;
-                overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .vbanner .vcl{margin-left:auto;font-weight:600;font-size:12px;opacity:.9;max-width:52%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .vbanner.pulse{animation:bp 1s ease-in-out infinite}
   @keyframes bp{0%,100%{filter:brightness(1)}50%{filter:brightness(1.25)}}
-  .body{padding:16px}
   .verdict-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-  .badge{font-weight:800;font-size:13px;letter-spacing:.5px;padding:6px 14px;border-radius:8px;color:#0b0e13;text-transform:uppercase}
+  .badge.risk{font-weight:800;font-size:13px;letter-spacing:.5px;padding:6px 14px;border-radius:8px;color:#0b0e13;text-transform:uppercase}
   .hazard{font-size:18px;font-weight:700}
   .kv{margin:12px 0}
   .kv .k{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px}
   .kv .v{font-size:14px;line-height:1.5}
-  .clause{background:rgba(124,92,255,.10);border:1px solid rgba(124,92,255,.35);
-          border-left:3px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:13.5px;line-height:1.5}
+  .clause{background:rgba(124,92,255,.10);border:1px solid rgba(124,92,255,.35);border-left:3px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:13.5px;line-height:1.5}
   .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-  .chip{font-size:12px;background:var(--panel2);border:1px solid var(--line);
-        border-radius:999px;padding:5px 11px;color:#cfd6e2}
+  .chip{font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 11px;color:#cfd6e2}
   .feed{max-height:74vh;overflow:auto}
   .ev{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
   .ev .dot{width:10px;height:10px;border-radius:50%;margin-top:5px;display:inline-block}
@@ -62,69 +34,74 @@
   .ev .obs{color:var(--muted);font-size:12.5px;margin-top:3px;line-height:1.4}
   .ev .cl{color:#a99bff;font-size:12px;margin-top:4px}
   .ev .thumb{width:64px;height:48px;object-fit:cover;border-radius:6px;background:#000;border:1px solid var(--line)}
-  .report{padding:18px 22px;line-height:1.6;font-size:14px}
   .report h1{font-size:20px;margin:.2em 0 .5em} .report h2{font-size:15px;color:var(--accent);margin:1.1em 0 .4em;text-transform:uppercase;letter-spacing:.5px}
   .report h3{font-size:13px;color:var(--muted);margin:.9em 0 .3em;text-transform:uppercase;letter-spacing:.5px}
   .report ul{margin:.2em 0 .6em;padding-left:18px} .report li{margin:.18em 0}
   .report code{background:var(--panel2);padding:1px 6px;border-radius:4px;font-size:12.5px}
   .hidden{display:none}
-  .foot{color:var(--muted);font-size:12px;text-align:center;padding:8px 0 22px}
   .spin{width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;display:inline-block;animation:s 0.8s linear infinite;vertical-align:-2px}
   @keyframes s{to{transform:rotate(360deg)}}
 </style>
 </head>
-<body>
-<header>
-  <div>
-    <h1>🦺 SafetyCommander</h1>
-    <div class="sub" data-i18n="monitor_sub">Autonomous safety officer · Qwen3-VL reasons risk from the written policy</div>
+<body data-bs-theme="dark">
+<header class="navbar navbar-expand-md d-print-none sticky-top">
+  <div class="container-fluid">
+    <div>
+      <h1 class="navbar-brand fs-3 mb-0">🦺 SafetyCommander</h1>
+      <div class="text-secondary small" data-i18n="monitor_sub">Autonomous safety officer · Qwen3-VL reasons risk from the written policy</div>
+    </div>
+    <div class="navbar-nav flex-row order-md-last align-items-center" style="gap:10px">
+      <span id="langsw"></span>
+      <a class="nav-link" href="/" data-i18n="switch_view">switch view</a>
+      <span class="badge bg-secondary" id="zonePill">zone: —</span>
+      <span class="badge bg-secondary" id="progPill">—</span>
+      <span class="badge bg-secondary" id="statusPill"><span class="spin"></span> starting…</span>
+      <button class="btn btn-primary" onclick="restart()">↻ Restart shift</button>
+    </div>
   </div>
-  <div class="spacer"></div>
-  <span id="langsw"></span>
-  <a class="pill" href="/" style="text-decoration:none" data-i18n="switch_view">switch view</a>
-  <span class="pill" id="zonePill">zone: —</span>
-  <span class="pill" id="progPill">—</span>
-  <span class="pill" id="statusPill"><span class="spin"></span> starting…</span>
-  <button onclick="restart()">↻ Restart shift</button>
 </header>
 
-<div class="wrap">
-  <!-- LEFT: current frame + verdict -->
-  <div>
-    <div class="panel">
-      <h2 data-i18n="monitor_curframe">Current frame</h2>
-      <div class="framebox">
-        <img id="frameImg" src="" alt="waiting for first frame…"/>
-        <div class="vbanner" id="vbanner"></div>
-        <div class="framecap" id="frameCap">—</div>
+<div class="page-wrapper">
+  <div class="page-body">
+    <div class="container-fluid">
+      <div class="row row-cards">
+        <div class="col-lg-7">
+          <div class="card">
+            <div class="card-header"><h3 class="card-title" data-i18n="monitor_curframe">Current frame</h3></div>
+            <div class="card-body">
+              <div class="framebox">
+                <img id="frameImg" src="" alt="waiting for first frame…"/>
+                <div class="vbanner" id="vbanner"></div>
+                <div class="framecap" id="frameCap">—</div>
+              </div>
+            </div>
+          </div>
+          <div class="card mt-3">
+            <div class="card-header"><h3 class="card-title" data-i18n="monitor_verdict">VLM safety verdict</h3></div>
+            <div class="card-body" id="verdict"><div class="text-secondary">Waiting for the first judgment…</div></div>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="card">
+            <div class="card-header"><h3 class="card-title" data-i18n="monitor_feed">Live event feed</h3></div>
+            <div class="feed" id="feed"></div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="panel" style="margin-top:16px">
-      <h2 data-i18n="monitor_verdict">VLM safety verdict</h2>
-      <div class="body" id="verdict">
-        <div style="color:var(--muted)">Waiting for the first judgment…</div>
+      <div class="row row-cards hidden" id="reportWrap">
+        <div class="col-12"><div class="card mt-3">
+          <div class="card-header"><h3 class="card-title">Shift handoff report</h3></div>
+          <div class="card-body report" id="report"></div>
+        </div></div>
       </div>
-    </div>
-  </div>
 
-  <!-- RIGHT: live feed -->
-  <div class="panel">
-    <h2 data-i18n="monitor_feed">Live event feed</h2>
-    <div class="feed" id="feed"></div>
+      <p class="text-secondary text-center small mt-3 mb-0">Risk levels are reasoned by the model from <code>safety_policy.txt</code>. Actions are routed by risk level — no hardcoded hazard rules.</p>
+    </div>
   </div>
 </div>
 
-<!-- REPORT (appears when shift is done) -->
-<div class="wrap hidden" id="reportWrap">
-  <div class="panel" style="grid-column:1/-1">
-    <h2>Shift handoff report</h2>
-    <div class="report" id="report"></div>
-  </div>
-</div>
-
-<div class="foot">Risk levels are reasoned by the model from <code>safety_policy.txt</code>. Actions are routed by risk level — no hardcoded hazard rules.</div>
-
+<script src="/static/vendor/tabler.min.js"></script>
 <script src="/static/i18n.js"></script>
 <script>
 const COLORS = {none:'#6b7280', low:'#22c55e', medium:'#eab308', high:'#f97316', critical:'#ef4444'};
@@ -144,7 +121,7 @@ function renderVerdict(j, acts){
   const recs = (j.recommended_actions||[]).map(r=>`<li>${esc(r)}</li>`).join('');
   document.getElementById('verdict').innerHTML = `
     <div class="verdict-head">
-      <span class="badge" style="background:${c}">${esc(j.risk_level)}</span>
+      <span class="badge risk" style="background:${c}">${esc(j.risk_level)}</span>
       <span class="hazard">${esc(j.hazard_type)}</span>
     </div>
     <div class="kv"><div class="k">Observation</div><div class="v">${esc(j.observation)}</div></div>
@@ -175,7 +152,6 @@ function renderFeed(events){
   }).join('');
 }
 
-// minimal markdown -> html for the handoff report
 function md(t){
   const lines = t.split('\n'); let out=[], inList=false;
   const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')
@@ -200,22 +176,20 @@ function md(t){
 async function tick(){
   let s;
   try{ s = await (await fetch('/api/state')).json(); }catch(e){ return; }
+  const T = window.T || (k=>k);
 
-  // status pill
   const sp = document.getElementById('statusPill');
-  if(s.status==='running') sp.innerHTML = '<span class="spin"></span> running';
-  else if(s.status==='done') sp.innerHTML = '✅ shift complete';
-  else if(s.status==='error') sp.innerHTML = '⚠️ error: '+esc(s.error);
-  else sp.innerHTML = '<span class="spin"></span> starting…';
+  if(s.status==='running'){ sp.className='badge bg-azure'; sp.innerHTML = '<span class="spin"></span> running'; }
+  else if(s.status==='done'){ sp.className='badge bg-green'; sp.innerHTML = '✅ shift complete'; }
+  else if(s.status==='error'){ sp.className='badge bg-red'; sp.innerHTML = '⚠️ error: '+esc(s.error); }
+  else { sp.className='badge bg-secondary'; sp.innerHTML = '<span class="spin"></span> starting…'; }
 
   document.getElementById('progPill').innerHTML = s.total? `frame <b>${s.index}</b> / ${s.total}` : '—';
   if(s.context && s.context.zone) document.getElementById('zonePill').textContent = 'zone: '+s.context.zone;
 
-  // update frame + verdict only when something changed
   if(s.index !== lastIndex && s.current_frame){
     lastIndex = s.index;
     const img = document.getElementById('frameImg');
-    // prefer the YOLO-annotated frame (boxes) when the perception layer has run
     const base = s.current_annotated
       ? '/annotated/'+encodeURIComponent(s.current_annotated)
       : '/frames/'+encodeURIComponent(s.current_frame);
@@ -224,14 +198,13 @@ async function tick(){
       s.current_frame + (s.current_annotated ? '  · YOLO overlay' : '');
     renderVerdict(s.latest, s.latest_actions);
 
-    // live VIOLATION banner burned over the video frame (real-time, like a CCTV alarm)
     const vb = document.getElementById('vbanner'), j = s.latest;
     if(j){
       const lvl = String(j.risk_level||'').toLowerCase(), c = color(lvl);
       vb.style.display = 'flex'; vb.style.background = c;
       vb.classList.toggle('pulse', lvl==='high' || lvl==='critical');
       if(lvl==='none'){
-        vb.innerHTML = `<span class="vlvl">✓ CLEAR</span><span class="vhaz">no violation</span>`;
+        vb.innerHTML = `<span class="vlvl">✓ ${T('clear')}</span><span class="vhaz">no violation</span>`;
       }else{
         vb.innerHTML = `<span class="vlvl">⚠ ${esc(lvl).toUpperCase()}</span>`
           + `<span class="vhaz">${esc(j.hazard_type)}</span>`

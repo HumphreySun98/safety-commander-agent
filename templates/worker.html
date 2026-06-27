@@ -1,46 +1,51 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"/>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>SafetyCommander · Worker</title>
+<link rel="stylesheet" href="/static/vendor/tabler.min.css"/>
 <style>
-  :root{--bg:#0b0e13;--panel:#141923;--panel2:#1b2230;--line:#252d3b;--txt:#e6eaf0;--muted:#8a94a6;
-    --accent:#7c5cff;--none:#6b7280;--low:#22c55e;--medium:#eab308;--high:#f97316;--critical:#ef4444;}
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-  header{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);background:#0d1117}
-  header h1{font-size:18px;margin:0} .sp{flex:1}
-  a.back{color:var(--muted);text-decoration:none;font-size:13px}
-  .wrap{max-width:760px;margin:0 auto;padding:18px 16px 60px}
-  .status{border-radius:14px;padding:22px;margin-bottom:18px;color:#0b0e13;font-weight:800}
-  .status .lvl{font-size:13px;letter-spacing:1px}
-  .status .hz{font-size:26px;margin:4px 0}
-  .status .act{font-weight:600;font-size:14px;opacity:.9}
-  h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:22px 0 10px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:10px 0}
-  .alert{border-left:4px solid var(--high)}
-  .alert .h{font-weight:700} .alert .c{color:#a99bff;font-size:13px;margin-top:4px}
-  .todo{display:flex;gap:10px;align-items:flex-start} .todo .box{margin-top:3px}
-  .muted{color:var(--muted)} .focus{background:rgba(124,92,255,.10);border:1px solid rgba(124,92,255,.35)}
-  .empty{color:var(--muted);font-size:14px;padding:6px 0}
-</style></head>
-<body>
-<header><h1>👷 SafetyCommander · <span data-i18n="worker_title">Worker · Floor</span></h1>
-  <div class="sp"></div><span id="langsw"></span>
-  <a class="back" href="/">← <span data-i18n="switch_view">switch view</span></a></header>
-<div class="wrap">
-  <div class="status" id="status" style="background:#6b7280">
-    <div class="lvl">CURRENT FLOOR STATUS</div><div class="hz">— </div><div class="act"></div>
+  :root{--tblr-font-sans-serif:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .status-hero{border-radius:14px;padding:22px 24px;color:#0b0e13;font-weight:700}
+  .status-hero .lvl{font-size:13px;letter-spacing:1px;opacity:.85}
+  .status-hero .hz{font-size:28px;font-weight:800;margin:4px 0}
+  .alert-item{border-left:4px solid var(--tblr-orange)}
+</style>
+</head>
+<body data-bs-theme="dark">
+<header class="navbar navbar-expand-md d-print-none sticky-top">
+  <div class="container-xl">
+    <h1 class="navbar-brand fs-3 mb-0">👷 SafetyCommander · <span data-i18n="worker_title">Worker · Floor</span></h1>
+    <div class="navbar-nav flex-row order-md-last align-items-center" style="gap:14px">
+      <span id="langsw"></span>
+      <a class="nav-link" href="/">← <span data-i18n="switch_view">switch view</span></a>
+    </div>
   </div>
+</header>
+<div class="page-wrapper">
+  <div class="page-body">
+    <div class="container-xl" style="max-width:820px">
 
-  <h2 data-i18n="alerts_h">⚠ Alerts to act on</h2>
-  <div id="alerts"><div class="empty" data-i18n="loading">Loading…</div></div>
+      <div class="status-hero mb-4" id="status" style="background:#6b7280">
+        <div class="lvl">CURRENT FLOOR STATUS</div><div class="hz">—</div><div class="act small"></div>
+      </div>
 
-  <h2 data-i18n="tasks_h">📋 Your corrective tasks</h2>
-  <div id="todo"><div class="empty" data-i18n="loading">Loading…</div></div>
+      <h3 class="text-secondary text-uppercase" data-i18n="alerts_h">⚠ Alerts to act on</h3>
+      <div id="alerts" class="mb-4"><div class="text-secondary" data-i18n="loading">Loading…</div></div>
 
-  <h2 data-i18n="focus_h">📅 Today's focus</h2>
-  <div class="card focus" id="focus"><div class="empty" data-i18n="loading">Loading…</div></div>
+      <h3 class="text-secondary text-uppercase" data-i18n="tasks_h">📋 Your corrective tasks</h3>
+      <div class="card mb-4"><div class="list-group list-group-flush" id="todo">
+        <div class="list-group-item text-secondary" data-i18n="loading">Loading…</div></div></div>
+
+      <h3 class="text-secondary text-uppercase" data-i18n="focus_h">📅 Today's focus</h3>
+      <div class="card" style="border-color:var(--tblr-primary)"><div class="card-body" id="focus">
+        <div class="text-secondary" data-i18n="loading">Loading…</div></div></div>
+
+    </div>
+  </div>
 </div>
+<script src="/static/vendor/tabler.min.js"></script>
 <script src="/static/i18n.js"></script>
 <script>
 const C={none:'#6b7280',low:'#22c55e',medium:'#eab308',high:'#f97316',critical:'#ef4444'};
@@ -59,26 +64,27 @@ function render(){
     box.querySelector('.act').textContent = lvl==='none'?'':(T('action_prefix')+' '+((v.recommended_actions||[])[0]||''));
     const evs=(_state.events||[]).filter(e=>['high','critical'].includes(String(e.judgment.risk_level).toLowerCase())).slice(-5).reverse();
     document.getElementById('alerts').innerHTML = evs.length? evs.map(e=>{
-      const jd=e.judgment;return `<div class="card alert" style="border-left-color:${C[jd.risk_level]||'#f97316'}">
-        <div class="h">${esc(jd.risk_level).toUpperCase()} · ${esc(jd.hazard_type)}</div>
-        <div>${esc(jd.observation)}</div><div class="c">▸ ${esc(jd.policy_clause)}</div></div>`;
-    }).join('') : `<div class="empty">${T('no_alerts')}</div>`;
+      const jd=e.judgment;return `<div class="card mb-2 alert-item" style="border-left-color:${C[jd.risk_level]||'#f97316'}">
+        <div class="card-body py-2">
+          <div class="fw-bold">${esc(jd.risk_level).toUpperCase()} · ${esc(jd.hazard_type)}</div>
+          <div class="text-secondary">${esc(jd.observation)}</div>
+          <div class="small mt-1" style="color:#a99bff">▸ ${esc(jd.policy_clause)}</div></div></div>`;
+    }).join('') : `<div class="text-secondary">${T('no_alerts')}</div>`;
   }
   document.getElementById('todo').innerHTML = (_ca&&_ca.length)? _ca.slice(0,8).map(c=>
-    `<div class="card todo"><input type="checkbox" class="box"><div><b>${esc(c.hazard)}</b>
-      <div class="muted">${esc(c.instruction)}</div></div></div>`).join('')
-    : `<div class="empty">${T('no_tasks')}</div>`;
+    `<label class="list-group-item d-flex align-items-start gap-2">
+      <input class="form-check-input mt-1" type="checkbox">
+      <span><b>${esc(c.hazard)}</b><div class="text-secondary small">${esc(c.instruction)}</div></span></label>`).join('')
+    : `<div class="list-group-item text-secondary">${T('no_tasks')}</div>`;
   const focus=(_plan.match(/Focus this week:\*\*\s*(.+)/)||[])[1];
   const items=[...(_plan.matchAll(/^## (.+)$/gm))].slice(0,4).map(m=>m[1]);
   document.getElementById('focus').innerHTML = focus?
-    (`<b>${esc(focus)}</b>`+(items.length?'<ul style="margin:8px 0 0;padding-left:18px">'+items.map(i=>`<li>${esc(i)}</li>`).join('')+'</ul>':''))
-    : `<div class="empty">${T('no_plan')}</div>`;
+    (`<div class="fw-bold mb-1">${esc(focus)}</div>`+(items.length?'<ul class="mb-0">'+items.map(i=>`<li>${esc(i)}</li>`).join('')+'</ul>':''))
+    : `<div class="text-secondary">${T('no_plan')}</div>`;
 }
-async function tick(){
-  _state=await j('/api/state'); _ca=await j('/api/correctives'); _plan=await t('/api/plan');
-  render();
-}
-window.onLangChange=render;          // re-render labels on language switch
+async function tick(){ _state=await j('/api/state'); _ca=await j('/api/correctives'); _plan=await t('/api/plan'); render(); }
+window.onLangChange=render;
 setInterval(tick,2500); tick();
 </script>
-</body></html>
+</body>
+</html>

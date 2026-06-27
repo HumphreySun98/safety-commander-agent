@@ -1,86 +1,100 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"/>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>SafetyCommander · Manager</title>
+<link rel="stylesheet" href="/static/vendor/tabler.min.css"/>
 <style>
-  :root{--bg:#0b0e13;--panel:#141923;--panel2:#1b2230;--line:#252d3b;--txt:#e6eaf0;--muted:#8a94a6;
-    --accent:#7c5cff;--high:#f97316;--critical:#ef4444;--ok:#22c55e;}
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-  header{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:#0d1117;position:sticky;top:0;z-index:5}
-  header h1{font-size:18px;margin:0} .sp{flex:1}
-  a.btn{background:var(--accent);color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600}
-  a.back{color:var(--muted);text-decoration:none;font-size:13px}
-  .wrap{max-width:1200px;margin:0 auto;padding:18px 18px 60px}
-  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:8px}
-  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
-  .kpi .n{font-size:28px;font-weight:800} .kpi .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
-  .kpi.bad .n{color:var(--critical)} .kpi.warn .n{color:var(--high)}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
-  .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 12px}
-  .bar{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px}
-  .bar .t{width:180px;color:#cfd6e2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .bar .b{height:10px;background:var(--accent);border-radius:5px;min-width:3px}
-  .bar .v{color:var(--muted)}
-  .ca{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
-  .ca b{color:#fff} .ca .i{color:var(--muted)}
-  .plan{white-space:pre-wrap;font-size:13px;line-height:1.5;max-height:420px;overflow:auto;color:#cfd6e2}
-  .muted{color:var(--muted)} .full{grid-column:1/-1}
-  h2 .pill{font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
-</style></head>
-<body>
-<header><h1>📊 SafetyCommander · <span data-i18n="manager_title">Manager · Operations</span></h1>
-  <div class="sp"></div><span id="langsw"></span>
-  <a class="btn" href="/monitor" data-i18n="live_monitor">▶ Live monitor</a>
-  <a class="back" href="/" data-i18n="switch_view">switch view</a></header>
-<div class="wrap">
-  <div class="kpis" id="kpis"></div>
+  :root{--tblr-font-sans-serif:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .plan-pre{white-space:pre-wrap;font-size:13px;line-height:1.5;max-height:420px;overflow:auto;margin:0;color:var(--tblr-body-color);background:transparent;border:0}
+</style>
+</head>
+<body data-bs-theme="dark">
+<header class="navbar navbar-expand-md d-print-none sticky-top">
+  <div class="container-xl">
+    <h1 class="navbar-brand fs-3 mb-0">📊 SafetyCommander · <span data-i18n="manager_title">Manager · Operations</span></h1>
+    <div class="navbar-nav flex-row order-md-last align-items-center" style="gap:12px">
+      <span id="langsw"></span>
+      <a class="btn btn-primary" href="/monitor" data-i18n="live_monitor">▶ Live monitor</a>
+      <a class="nav-link" href="/" data-i18n="switch_view">switch view</a>
+    </div>
+  </div>
+</header>
+<div class="page-wrapper">
+  <div class="page-body">
+    <div class="container-xl">
 
-  <div class="grid">
-    <div class="panel"><h2 data-i18n="panel_hazards">Top hazards</h2><div id="haz" class="muted" data-i18n="loading">Loading…</div></div>
-    <div class="panel"><h2 data-i18n="panel_zone">By zone</h2><div id="zone" class="muted" data-i18n="loading">Loading…</div></div>
-    <div class="panel"><h2 data-i18n="panel_backlog">Open corrective-action backlog</h2><div id="ca" class="muted" data-i18n="loading">Loading…</div></div>
-    <div class="panel"><h2 data-i18n="panel_plan">AI weekly plan</h2><div id="plan" class="plan muted" data-i18n="loading">Loading…</div></div>
+      <div class="row row-deck row-cards mb-1" id="kpis"></div>
+
+      <div class="row row-deck row-cards mt-1">
+        <div class="col-lg-6"><div class="card"><div class="card-header"><h3 class="card-title" data-i18n="panel_hazards">Top hazards</h3></div>
+          <div class="card-body"><div id="chart-haz" style="min-height:220px"></div></div></div></div>
+        <div class="col-lg-6"><div class="card"><div class="card-header"><h3 class="card-title" data-i18n="panel_zone">By zone</h3></div>
+          <div class="card-body"><div id="chart-zone" style="min-height:220px"></div></div></div></div>
+      </div>
+
+      <div class="row row-deck row-cards mt-1">
+        <div class="col-lg-6"><div class="card"><div class="card-header"><h3 class="card-title" data-i18n="panel_backlog">Open corrective-action backlog</h3></div>
+          <div class="table-responsive" style="max-height:420px;overflow:auto"><table class="table table-vcenter card-table">
+            <tbody id="ca"><tr><td class="text-secondary" data-i18n="loading">Loading…</td></tr></tbody></table></div></div></div>
+        <div class="col-lg-6"><div class="card"><div class="card-header"><h3 class="card-title" data-i18n="panel_plan">AI weekly plan</h3></div>
+          <div class="card-body"><pre class="plan-pre" id="plan" data-i18n="loading">Loading…</pre></div></div></div>
+      </div>
+
+    </div>
   </div>
 </div>
+<script src="/static/vendor/tabler.min.js"></script>
+<script src="/static/vendor/apexcharts.min.js"></script>
 <script src="/static/i18n.js"></script>
 <script>
 const esc=s=>(s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 async function j(u){try{return await (await fetch(u)).json()}catch(e){return null}}
 async function t(u){try{return await (await fetch(u)).text()}catch(e){return ''}}
-let _k=null, _ca=null, _plan='';
+let _k=null, _ca=null, _plan='', hazChart=null, zoneChart=null;
 
-function bars(el, pairs){
-  if(!pairs||!pairs.length){el.innerHTML=`<div class="muted">${(window.T||(k=>k))('none_open')}</div>`;return}
-  const max=Math.max(...pairs.map(p=>p[1]));
-  el.innerHTML=pairs.map(([k,v])=>`<div class="bar"><span class="t">${esc(k)}</span>
-    <span class="b" style="width:${Math.max(3,160*v/max)}px"></span><span class="v">${v}</span></div>`).join('');
+function barOpts(pairs, color){
+  return {
+    chart:{type:'bar',height:220,toolbar:{show:false},background:'transparent',fontFamily:'inherit'},
+    theme:{mode:'dark'},
+    plotOptions:{bar:{horizontal:true,borderRadius:4,barHeight:'62%'}},
+    dataLabels:{enabled:false}, grid:{borderColor:'rgba(255,255,255,.06)'},
+    colors:[color], series:[{name:'count',data:pairs.map(p=>p[1])}],
+    xaxis:{categories:pairs.map(p=>p[0]),labels:{style:{colors:'#8a94a6'}}},
+    yaxis:{labels:{style:{colors:'#cfd6e2'},maxWidth:200}},
+    tooltip:{theme:'dark'}
+  };
+}
+function drawChart(ref, elId, pairs, color){
+  if(!pairs||!pairs.length){ document.getElementById(elId).innerHTML='<div class="text-secondary p-3">—</div>'; return ref; }
+  if(ref){ ref.updateOptions({series:[{data:pairs.map(p=>p[1])}],xaxis:{categories:pairs.map(p=>p[0])}}); return ref; }
+  const ch=new ApexCharts(document.getElementById(elId), barOpts(pairs,color)); ch.render(); return ch;
 }
 function render(){
   const T=window.T||(k=>k);
   if(_k){
     const rate=_k.observations? Math.round(_k.violations/_k.observations*100):0;
-    document.getElementById('kpis').innerHTML=`
-      <div class="kpi"><div class="n">${_k.violations}</div><div class="l">${T('kpi_violations')} (${rate}%)</div></div>
-      <div class="kpi warn"><div class="n">${_k.near_miss}</div><div class="l">${T('kpi_nearmiss')}</div></div>
-      <div class="kpi bad"><div class="n">${_k.critical}</div><div class="l">${T('kpi_critical')}</div></div>
-      <div class="kpi"><div class="n">${(_k.open_correctives||[]).length}</div><div class="l">${T('kpi_backlog')}</div></div>
-      <div class="kpi"><div class="n">${_k.observations}</div><div class="l">${T('kpi_frames')}</div></div>`;
-    bars(document.getElementById('haz'), _k.by_hazard||[]);
-    bars(document.getElementById('zone'), _k.by_zone||[]);
+    const card=(n,label,cls='')=>`<div class="col-6 col-lg"><div class="card"><div class="card-body">
+      <div class="subheader">${label}</div><div class="h1 mb-0 ${cls}">${n}</div></div></div></div>`;
+    document.getElementById('kpis').innerHTML=
+      card(_k.violations+` <span class="text-secondary fs-4">(${rate}%)</span>`, T('kpi_violations'))
+      + card(_k.near_miss, T('kpi_nearmiss'), 'text-warning')
+      + card(_k.critical, T('kpi_critical'), 'text-danger')
+      + card((_k.open_correctives||[]).length, T('kpi_backlog'))
+      + card(_k.observations, T('kpi_frames'));
+    hazChart=drawChart(hazChart,'chart-haz', _k.by_hazard||[], '#7c5cff');
+    zoneChart=drawChart(zoneChart,'chart-zone', _k.by_zone||[], '#22c55e');
   }
-  document.getElementById('ca').innerHTML=(_ca&&_ca.length)? _ca.slice(0,12).map(c=>
-    `<div class="ca"><b>${esc(c.hazard)}</b> <span class="i">— ${esc(c.instruction)}</span></div>`).join('')
-    + (_ca.length>12?`<div class="muted" style="padding-top:8px">…+${_ca.length-12}</div>`:'')
-    : `<div class="muted">${T('none_open')}</div>`;
+  document.getElementById('ca').innerHTML=(_ca&&_ca.length)? _ca.slice(0,14).map(c=>
+    `<tr><td><span class="fw-bold">${esc(c.hazard)}</span><div class="text-secondary small">${esc(c.instruction)}</div></td></tr>`).join('')
+    + (_ca.length>14?`<tr><td class="text-secondary">…+${_ca.length-14}</td></tr>`:'')
+    : `<tr><td class="text-secondary">${T('none_open')}</td></tr>`;
   document.getElementById('plan').textContent=_plan || T('no_plan');
 }
-async function tick(){
-  _k=await j('/api/kpi'); _ca=await j('/api/correctives'); _plan=await t('/api/plan');
-  render();
-}
-window.onLangChange=render;          // re-render labels on language switch
+async function tick(){ _k=await j('/api/kpi'); _ca=await j('/api/correctives'); _plan=await t('/api/plan'); render(); }
+window.onLangChange=render;
 setInterval(tick,4000); tick();
 </script>
-</body></html>
+</body>
+</html>
