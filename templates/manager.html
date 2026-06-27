@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SafetyCommander · 管理端</title>
+<title>SafetyCommander · Manager</title>
 <style>
   :root{--bg:#0b0e13;--panel:#141923;--panel2:#1b2230;--line:#252d3b;--txt:#e6eaf0;--muted:#8a94a6;
     --accent:#7c5cff;--high:#f97316;--critical:#ef4444;--ok:#22c55e;}
@@ -30,51 +30,57 @@
   h2 .pill{font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
 </style></head>
 <body>
-<header><h1>📊 SafetyCommander · 管理端</h1><div class="sp"></div>
-  <a class="btn" href="/monitor">▶ 实时监控大屏</a>
-  <a class="back" href="/">切换视图</a></header>
+<header><h1>📊 SafetyCommander · <span data-i18n="manager_title">Manager · Operations</span></h1>
+  <div class="sp"></div><span id="langsw"></span>
+  <a class="btn" href="/monitor" data-i18n="live_monitor">▶ Live monitor</a>
+  <a class="back" href="/" data-i18n="switch_view">switch view</a></header>
 <div class="wrap">
   <div class="kpis" id="kpis"></div>
 
   <div class="grid">
-    <div class="panel"><h2>Top hazards <span class="pill">violations</span></h2><div id="haz" class="muted">Loading…</div></div>
-    <div class="panel"><h2>By zone</h2><div id="zone" class="muted">Loading…</div></div>
-    <div class="panel"><h2>Open corrective-action backlog</h2><div id="ca" class="muted">Loading…</div></div>
-    <div class="panel"><h2>AI weekly plan <span class="pill">planner.py</span></h2><div id="plan" class="plan muted">Loading…</div></div>
+    <div class="panel"><h2 data-i18n="panel_hazards">Top hazards</h2><div id="haz" class="muted" data-i18n="loading">Loading…</div></div>
+    <div class="panel"><h2 data-i18n="panel_zone">By zone</h2><div id="zone" class="muted" data-i18n="loading">Loading…</div></div>
+    <div class="panel"><h2 data-i18n="panel_backlog">Open corrective-action backlog</h2><div id="ca" class="muted" data-i18n="loading">Loading…</div></div>
+    <div class="panel"><h2 data-i18n="panel_plan">AI weekly plan</h2><div id="plan" class="plan muted" data-i18n="loading">Loading…</div></div>
   </div>
 </div>
+<script src="/static/i18n.js"></script>
 <script>
 const esc=s=>(s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 async function j(u){try{return await (await fetch(u)).json()}catch(e){return null}}
 async function t(u){try{return await (await fetch(u)).text()}catch(e){return ''}}
+let _k=null, _ca=null, _plan='';
 
 function bars(el, pairs){
-  if(!pairs||!pairs.length){el.innerHTML='<div class="muted">none</div>';return}
+  if(!pairs||!pairs.length){el.innerHTML=`<div class="muted">${(window.T||(k=>k))('none_open')}</div>`;return}
   const max=Math.max(...pairs.map(p=>p[1]));
   el.innerHTML=pairs.map(([k,v])=>`<div class="bar"><span class="t">${esc(k)}</span>
     <span class="b" style="width:${Math.max(3,160*v/max)}px"></span><span class="v">${v}</span></div>`).join('');
 }
-async function tick(){
-  const k=await j('/api/kpi');
-  if(k){
-    const rate=k.observations? Math.round(k.violations/k.observations*100):0;
+function render(){
+  const T=window.T||(k=>k);
+  if(_k){
+    const rate=_k.observations? Math.round(_k.violations/_k.observations*100):0;
     document.getElementById('kpis').innerHTML=`
-      <div class="kpi"><div class="n">${k.violations}</div><div class="l">Violations (${rate}%)</div></div>
-      <div class="kpi warn"><div class="n">${k.near_miss}</div><div class="l">Near-misses</div></div>
-      <div class="kpi bad"><div class="n">${k.critical}</div><div class="l">Critical</div></div>
-      <div class="kpi"><div class="n">${(k.open_correctives||[]).length}</div><div class="l">Open CA backlog</div></div>
-      <div class="kpi"><div class="n">${k.observations}</div><div class="l">Frames observed</div></div>`;
-    bars(document.getElementById('haz'), k.by_hazard||[]);
-    bars(document.getElementById('zone'), k.by_zone||[]);
+      <div class="kpi"><div class="n">${_k.violations}</div><div class="l">${T('kpi_violations')} (${rate}%)</div></div>
+      <div class="kpi warn"><div class="n">${_k.near_miss}</div><div class="l">${T('kpi_nearmiss')}</div></div>
+      <div class="kpi bad"><div class="n">${_k.critical}</div><div class="l">${T('kpi_critical')}</div></div>
+      <div class="kpi"><div class="n">${(_k.open_correctives||[]).length}</div><div class="l">${T('kpi_backlog')}</div></div>
+      <div class="kpi"><div class="n">${_k.observations}</div><div class="l">${T('kpi_frames')}</div></div>`;
+    bars(document.getElementById('haz'), _k.by_hazard||[]);
+    bars(document.getElementById('zone'), _k.by_zone||[]);
   }
-  const ca=await j('/api/correctives');
-  document.getElementById('ca').innerHTML=(ca&&ca.length)? ca.slice(0,12).map(c=>
+  document.getElementById('ca').innerHTML=(_ca&&_ca.length)? _ca.slice(0,12).map(c=>
     `<div class="ca"><b>${esc(c.hazard)}</b> <span class="i">— ${esc(c.instruction)}</span></div>`).join('')
-    + (ca.length>12?`<div class="muted" style="padding-top:8px">…and ${ca.length-12} more</div>`:'')
-    : '<div class="muted">None open ✅</div>';
-  const plan=await t('/api/plan');
-  document.getElementById('plan').textContent=plan;
+    + (_ca.length>12?`<div class="muted" style="padding-top:8px">…+${_ca.length-12}</div>`:'')
+    : `<div class="muted">${T('none_open')}</div>`;
+  document.getElementById('plan').textContent=_plan || T('no_plan');
 }
+async function tick(){
+  _k=await j('/api/kpi'); _ca=await j('/api/correctives'); _plan=await t('/api/plan');
+  render();
+}
+window.onLangChange=render;          // re-render labels on language switch
 setInterval(tick,4000); tick();
 </script>
 </body></html>

@@ -77,9 +77,11 @@
 <header>
   <div>
     <h1>🦺 SafetyCommander</h1>
-    <div class="sub">Autonomous safety officer · Qwen3-VL reasons risk from the written policy</div>
+    <div class="sub" data-i18n="monitor_sub">Autonomous safety officer · Qwen3-VL reasons risk from the written policy</div>
   </div>
   <div class="spacer"></div>
+  <span id="langsw"></span>
+  <a class="pill" href="/" style="text-decoration:none" data-i18n="switch_view">switch view</a>
   <span class="pill" id="zonePill">zone: —</span>
   <span class="pill" id="progPill">—</span>
   <span class="pill" id="statusPill"><span class="spin"></span> starting…</span>
@@ -90,7 +92,7 @@
   <!-- LEFT: current frame + verdict -->
   <div>
     <div class="panel">
-      <h2>Current frame</h2>
+      <h2 data-i18n="monitor_curframe">Current frame</h2>
       <div class="framebox">
         <img id="frameImg" src="" alt="waiting for first frame…"/>
         <div class="vbanner" id="vbanner"></div>
@@ -99,7 +101,7 @@
     </div>
 
     <div class="panel" style="margin-top:16px">
-      <h2>VLM safety verdict</h2>
+      <h2 data-i18n="monitor_verdict">VLM safety verdict</h2>
       <div class="body" id="verdict">
         <div style="color:var(--muted)">Waiting for the first judgment…</div>
       </div>
@@ -108,7 +110,7 @@
 
   <!-- RIGHT: live feed -->
   <div class="panel">
-    <h2>Live event feed</h2>
+    <h2 data-i18n="monitor_feed">Live event feed</h2>
     <div class="feed" id="feed"></div>
   </div>
 </div>
@@ -123,6 +125,7 @@
 
 <div class="foot">Risk levels are reasoned by the model from <code>safety_policy.txt</code>. Actions are routed by risk level — no hardcoded hazard rules.</div>
 
+<script src="/static/i18n.js"></script>
 <script>
 const COLORS = {none:'#6b7280', low:'#22c55e', medium:'#eab308', high:'#f97316', critical:'#ef4444'};
 const ACTION_LABEL = {

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SafetyCommander · 员工端</title>
+<title>SafetyCommander · Worker</title>
 <style>
   :root{--bg:#0b0e13;--panel:#141923;--panel2:#1b2230;--line:#252d3b;--txt:#e6eaf0;--muted:#8a94a6;
     --accent:#7c5cff;--none:#6b7280;--low:#22c55e;--medium:#eab308;--high:#f97316;--critical:#ef4444;}
@@ -24,58 +24,61 @@
   .empty{color:var(--muted);font-size:14px;padding:6px 0}
 </style></head>
 <body>
-<header><h1>👷 SafetyCommander · 员工端</h1><div class="sp"></div>
-  <a class="back" href="/">← 切换视图</a></header>
+<header><h1>👷 SafetyCommander · <span data-i18n="worker_title">Worker · Floor</span></h1>
+  <div class="sp"></div><span id="langsw"></span>
+  <a class="back" href="/">← <span data-i18n="switch_view">switch view</span></a></header>
 <div class="wrap">
   <div class="status" id="status" style="background:#6b7280">
     <div class="lvl">CURRENT FLOOR STATUS</div><div class="hz">— </div><div class="act"></div>
   </div>
 
-  <h2>⚠ 需要你注意 · alerts to act on</h2>
-  <div id="alerts"><div class="empty">No active high-risk alerts.</div></div>
+  <h2 data-i18n="alerts_h">⚠ Alerts to act on</h2>
+  <div id="alerts"><div class="empty" data-i18n="loading">Loading…</div></div>
 
-  <h2>📋 我的整改任务 · your corrective actions</h2>
-  <div id="todo"><div class="empty">Loading…</div></div>
+  <h2 data-i18n="tasks_h">📋 Your corrective tasks</h2>
+  <div id="todo"><div class="empty" data-i18n="loading">Loading…</div></div>
 
-  <h2>📅 今日安全重点 · today's focus</h2>
-  <div class="card focus" id="focus"><div class="empty">Loading…</div></div>
+  <h2 data-i18n="focus_h">📅 Today's focus</h2>
+  <div class="card focus" id="focus"><div class="empty" data-i18n="loading">Loading…</div></div>
 </div>
+<script src="/static/i18n.js"></script>
 <script>
 const C={none:'#6b7280',low:'#22c55e',medium:'#eab308',high:'#f97316',critical:'#ef4444'};
 const esc=s=>(s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 async function j(u){try{return await (await fetch(u)).json()}catch(e){return null}}
 async function t(u){try{return await (await fetch(u)).text()}catch(e){return ''}}
+let _state=null, _ca=null, _plan='';
 
-async function tick(){
-  const s=await j('/api/state');
-  if(s&&s.latest){
-    const v=s.latest, lvl=String(v.risk_level||'none').toLowerCase(), c=C[lvl]||'#6b7280';
+function render(){
+  const T=window.T||(k=>k);
+  if(_state&&_state.latest){
+    const v=_state.latest, lvl=String(v.risk_level||'none').toLowerCase(), c=C[lvl]||'#6b7280';
     const box=document.getElementById('status'); box.style.background=c;
-    box.querySelector('.hz').textContent = lvl==='none'?'✓ All clear':esc(v.hazard_type);
-    box.querySelector('.lvl').textContent = lvl==='none'?'CURRENT FLOOR STATUS · CLEAR':('CURRENT FLOOR STATUS · '+lvl.toUpperCase());
-    box.querySelector('.act').textContent = lvl==='none'?'':('Action: '+ ((v.recommended_actions||[])[0]||'follow the cited policy'));
-    // active alerts = recent high/critical
-    const evs=(s.events||[]).filter(e=>['high','critical'].includes(String(e.judgment.risk_level).toLowerCase())).slice(-5).reverse();
+    box.querySelector('.hz').textContent = lvl==='none'?T('all_clear'):esc(v.hazard_type);
+    box.querySelector('.lvl').textContent = T('status_label')+' · '+(lvl==='none'?T('clear'):lvl.toUpperCase());
+    box.querySelector('.act').textContent = lvl==='none'?'':(T('action_prefix')+' '+((v.recommended_actions||[])[0]||''));
+    const evs=(_state.events||[]).filter(e=>['high','critical'].includes(String(e.judgment.risk_level).toLowerCase())).slice(-5).reverse();
     document.getElementById('alerts').innerHTML = evs.length? evs.map(e=>{
       const jd=e.judgment;return `<div class="card alert" style="border-left-color:${C[jd.risk_level]||'#f97316'}">
         <div class="h">${esc(jd.risk_level).toUpperCase()} · ${esc(jd.hazard_type)}</div>
         <div>${esc(jd.observation)}</div><div class="c">▸ ${esc(jd.policy_clause)}</div></div>`;
-    }).join('') : '<div class="empty">No active high-risk alerts. ✅</div>';
+    }).join('') : `<div class="empty">${T('no_alerts')}</div>`;
   }
-  // my corrective actions
-  const ca=await j('/api/correctives');
-  document.getElementById('todo').innerHTML = (ca&&ca.length)? ca.slice(0,8).map(c=>
+  document.getElementById('todo').innerHTML = (_ca&&_ca.length)? _ca.slice(0,8).map(c=>
     `<div class="card todo"><input type="checkbox" class="box"><div><b>${esc(c.hazard)}</b>
       <div class="muted">${esc(c.instruction)}</div></div></div>`).join('')
-    : '<div class="empty">No open corrective actions assigned. ✅</div>';
-  // today's focus from the weekly plan
-  const plan=await t('/api/plan');
-  const focus=(plan.match(/Focus this week:\*\*\s*(.+)/)||[])[1];
-  const items=[...plan.matchAll(/^## (.+)$/gm)].slice(0,4).map(m=>m[1]);
+    : `<div class="empty">${T('no_tasks')}</div>`;
+  const focus=(_plan.match(/Focus this week:\*\*\s*(.+)/)||[])[1];
+  const items=[...(_plan.matchAll(/^## (.+)$/gm))].slice(0,4).map(m=>m[1]);
   document.getElementById('focus').innerHTML = focus?
     (`<b>${esc(focus)}</b>`+(items.length?'<ul style="margin:8px 0 0;padding-left:18px">'+items.map(i=>`<li>${esc(i)}</li>`).join('')+'</ul>':''))
-    : '<div class="empty">No plan yet (run planner.py).</div>';
+    : `<div class="empty">${T('no_plan')}</div>`;
 }
+async function tick(){
+  _state=await j('/api/state'); _ca=await j('/api/correctives'); _plan=await t('/api/plan');
+  render();
+}
+window.onLangChange=render;          // re-render labels on language switch
 setInterval(tick,2500); tick();
 </script>
 </body></html>
