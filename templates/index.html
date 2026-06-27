@@ -145,8 +145,10 @@ function renderFeed(events){
   const feed = document.getElementById('feed');
   feed.innerHTML = events.slice().reverse().map(e=>{
     const j=e.judgment, c=color(j.risk_level);
+    const thumb = e.annotated ? '/annotated/'+encodeURIComponent(e.annotated)
+                              : '/frames/'+encodeURIComponent(e.frame);
     return `<div class="ev">
-      <img class="thumb" src="/frames/${encodeURIComponent(e.frame)}" alt=""/>
+      <img class="thumb" src="${thumb}" alt=""/>
       <div>
         <span class="dot" style="background:${c}"></span>
         <span class="lvl" style="color:${c}">${esc(j.risk_level)}</span>

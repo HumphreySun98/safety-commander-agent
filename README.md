@@ -77,13 +77,21 @@ The model endpoint (OpenAI-compatible Qwen3-VL) and key come from the hackathon 
 **Headless** (process `frames/`, print + save the handoff report):
 
 ```bash
-python main.py
+python main.py                              # static frames (single-frame judging)
+python main.py demo_clips/forklift_overload.mp4   # VIDEO: temporal, multi-frame judging
 ```
+
+**Video mode** is the closed-loop monitor: it slides over a clip in short windows,
+sends each window's frames to Qwen3-VL *together*, and judges the **behaviour over
+time** (a pedestrian entering a forklift's path = a developing near-miss; an
+overloaded load tilting in transit). Single frames miss these; the clip catches them.
 
 **Live dashboard** (recommended for the demo — Flask):
 
 ```bash
-python dashboard.py        # open http://localhost:8000
+python dashboard.py                                          # static frames
+SC_VIDEO=demo_clips/forklift_overload.mp4 python dashboard.py   # video mode
+# open http://localhost:8000
 ```
 
 The dashboard shows, in real time: the current frame, the VLM verdict, the **cited

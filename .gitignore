@@ -37,5 +37,8 @@ runs/
 datasets/
 yolo*.pt
 
+# transient video-mode rep frames (regenerated each run)
+frames_annotated/_live_*
+
 # os
 .DS_Store

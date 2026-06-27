@@ -8,6 +8,7 @@ It starts the shift loop in a background thread and the single-page UI polls
 /api/state to show, in real time: the current frame, the VLM's verdict, the cited
 policy clause, the risk level, the actions triggered, and the running handoff report.
 """
+import os
 import threading
 from copy import deepcopy
 from pathlib import Path
@@ -15,7 +16,7 @@ from pathlib import Path
 from flask import Flask, jsonify, send_from_directory, Response
 
 import config
-from main import run_shift, DEFAULT_CONTEXT
+from main import run_shift, run_video, DEFAULT_CONTEXT, VIDEO_CONTEXT
 
 app = Flask(__name__)
 
@@ -48,6 +49,7 @@ def _on_update(payload):
         STATE["latest_actions"] = payload["actions"]
         STATE["events"].append({
             "frame": payload["frame"],
+            "annotated": payload.get("annotated"),
             "judgment": payload["judgment"],
             "actions": payload["actions"],
         })
@@ -61,7 +63,13 @@ def _on_done(report):
 
 def _run():
     try:
-        run_shift(context=STATE["context"], on_update=_on_update, on_done=_on_done)
+        video = os.getenv("SC_VIDEO")          # set SC_VIDEO=path/clip.mp4 for video mode
+        if video:
+            with _state_lock:
+                STATE["context"] = VIDEO_CONTEXT
+            run_video(video, context=VIDEO_CONTEXT, on_update=_on_update, on_done=_on_done)
+        else:
+            run_shift(context=STATE["context"], on_update=_on_update, on_done=_on_done)
     except Exception as e:
         with _state_lock:
             STATE["status"] = "error"

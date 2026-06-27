@@ -92,6 +92,27 @@ def _encode_image(image_path, max_dim=None) -> str:
     return f"data:image/jpeg;base64,{b64}"
 
 
+def encode_frame(src, max_dim=None) -> str:
+    """Encode a frame (file path, PIL.Image, or numpy array) to a JPEG data URL.
+    Used for multi-frame clip judging."""
+    max_dim = max_dim or config.MAX_IMAGE_DIM
+    if isinstance(src, (str, Path)):
+        img = Image.open(src)
+    elif isinstance(src, Image.Image):
+        img = src
+    else:                                  # numpy array from imageio
+        img = Image.fromarray(src)
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    w, h = img.size
+    scale = min(1.0, max_dim / max(w, h))
+    if scale < 1.0:
+        img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=82)
+    return f"data:image/jpeg;base64,{base64.b64encode(buf.getvalue()).decode('utf-8')}"
+
+
 def _extract_json(text):
     """Tolerant JSON parse: strip ```json fences, then grab the outermost {...}."""
     if not text:
@@ -277,6 +298,66 @@ def judge_frame(image_path, policy_text, shift_context=None, perception=None) ->
         return _fallback(frame_name, "json_parse_failed", t0, raw=raw, zone=zone)
 
     return _normalize(parsed, frame_name, t0, raw, zone=zone)
+
+
+def _format_clip_text(policy_text, shift_context, perception, n_frames, window_sec) -> str:
+    preamble = (
+        f"You are watching {n_frames} CONSECUTIVE frames from ONE camera, in time order, "
+        f"spanning about {window_sec:.1f} seconds. Judge the BEHAVIOUR OVER TIME, not a single "
+        "still: look at motion and trajectory. A pedestrian moving INTO a forklift's path is a "
+        "developing near-miss; a worker reaching into running machinery; an unstable or "
+        "overloaded load in transit; someone leaving a hazard zone is the situation improving. "
+        "Decide the risk from how the scene EVOLVES across the frames.\n\n"
+    )
+    return preamble + _format_user_text(policy_text, shift_context, perception)
+
+
+def judge_clip(frames, policy_text, shift_context=None, perception=None,
+               window_sec=2.0, label=None, max_dim=512) -> dict:
+    """
+    Temporal version of judge_frame: feed a SEQUENCE of consecutive frames (a short
+    clip) to Qwen3-VL so it can reason about motion / behaviour over time (near-miss
+    approach, reaching into a machine, an overloaded load in transit). Returns the
+    same structured schema as judge_frame, so dispatch()/ShiftReport are unchanged.
+
+    `frames` = list of file paths, PIL images, or numpy arrays (in time order).
+    """
+    t0 = time.time()
+    name = label or f"clip[{len(frames)}f]"
+    zone = (shift_context or {}).get("zone", "")
+    try:
+        urls = [encode_frame(f, max_dim) for f in frames]
+    except Exception as e:
+        return _fallback(name, f"image_error: {e}", t0, zone=zone)
+
+    text = _format_clip_text(policy_text, shift_context, perception, len(urls), window_sec)
+    content = [{"type": "text", "text": text}]
+    content += [{"type": "image_url", "image_url": {"url": u}} for u in urls]
+    messages = [{"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": content}]
+
+    raw = ""
+    try:
+        resp = _chat(messages, config.VLM_MAX_TOKENS)
+        raw = resp.choices[0].message.content or ""
+        parsed = _extract_json(raw)
+        if parsed is None:
+            messages.append({"role": "assistant", "content": raw})
+            messages.append({"role": "user", "content":
+                "That was not valid JSON. Reply with ONLY the JSON object — no fences, no prose."})
+            resp = _chat(messages, config.VLM_MAX_TOKENS)
+            raw = resp.choices[0].message.content or ""
+            parsed = _extract_json(raw)
+    except Exception as e:
+        return _fallback(name, f"api_error: {e}", t0, raw=raw, zone=zone)
+
+    if parsed is None:
+        return _fallback(name, "json_parse_failed", t0, raw=raw, zone=zone)
+
+    out = _normalize(parsed, name, t0, raw, zone=zone)
+    out["n_frames"] = len(urls)
+    out["temporal"] = True
+    return out
 
 
 if __name__ == "__main__":

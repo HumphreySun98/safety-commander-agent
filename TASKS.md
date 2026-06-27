@@ -40,6 +40,11 @@ operations managers. Owners: **A = repo owner (agent/demo)**, **B = 4090 teammat
 - [x] **Perception contract**: `perception.py` (schema + loaders + stub),
       `PERCEPTION.md`, `judge_frame(..., perception=)`, dashboard box overlay,
       gitignore weights. Verified: a "0.8 m" fact made the VLM escalate to HIGH citing 2.1.
+- [x] **Video / temporal mode**: `judge_clip()` (multi-frame, one VLM call) + `run_video()`
+      sliding-window closed loop — judges **behaviour over time**, not stills. Catches motion
+      hazards single frames miss (overloaded forklift: single-frame NONE → clip HIGH
+      "unstable_load", model notes the tilt "increases across the frames"). Dashboard
+      `SC_VIDEO=clip.mp4`; small reproducible clip in `demo_clips/`.
 
 ---
 
