@@ -275,6 +275,17 @@ distance fact: YOLO "<code>person @ 2.1 m</code>" → pass-1 near-miss → RAG c
 <p><b>Demo line:</b> "Once the agent <i>sees</i> a forklift near-miss, it retrieves the matching OSHA
 clause so the incident log explains, on the record, why the action was taken." — auditability, not accuracy.</p>
 
+<h3>Two domain-targeted RAG paths (same index, different jobs)</h3>
+<table>
+<tr><th>Path</th><th>Fires when</th><th>query → retrieves → use</th></tr>
+<tr><td>① <b>Judge-time</b></td><td>a hazard is judged (risk ≥ medium)</td>
+    <td><code>hazard_type</code> → OSHA standard / plant SOP → <b>cite the clause</b> in the verdict (auditability)</td></tr>
+<tr><td>② <b>Plan-time</b></td><td>weekly planning (<code>planner.py</code>)</td>
+    <td>top hazards → <b>industrial EHS practice</b> (inspection cadence, toolbox/training, KPI targets) → ground the weekly plan in real cadence</td></tr>
+</table>
+<p>Both retrieve (TF-IDF) from the same <code>knowledge/</code> corpus — OSHA 1910.x, plant SOPs,
+SDS, and EHS planning/KPI standards. Knowledge in; the model still decides.</p>
+
 <!-- 9 -->
 <h2 id="s9"><span class="n">09</span>Design invariants</h2>
 <table>
