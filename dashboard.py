@@ -74,6 +74,9 @@ def _on_done(report):
 def _run():
     try:
         video = os.getenv("SC_VIDEO")          # SC_VIDEO=clip.mp4 (or a folder of clips)
+        if video and not Path(video).exists():  # bad path → don't hard-error, fall back
+            print(f"  (SC_VIDEO={video!r} not found — falling back to demo_clips/)")
+            video = None
         if not video:                          # default to REAL-TIME VIDEO over demo_clips/ if present
             d = Path(__file__).resolve().parent / "demo_clips"
             if d.is_dir() and any(q.suffix.lower() in VIDEO_EXT for q in d.iterdir()):
