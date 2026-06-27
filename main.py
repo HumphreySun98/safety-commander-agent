@@ -127,15 +127,35 @@ def sample_windows(video_path, window_sec=1.6, stride_sec=3.0, k=4):
     return out
 
 
-def run_video(video_path, context=None, on_update=None, on_done=None,
-              interval=None, window_sec=1.6, stride_sec=3.0, k=4):
-    """Closed loop over a VIDEO: each sliding window is judged TEMPORALLY (motion /
-    behaviour over ~window_sec), then dispatched and accumulated. The agent actually
-    'watches' the footage instead of isolated stills."""
+def _count_windows(video_path, window_sec, stride_sec):
+    """Cheap pre-count of sliding windows (reads only metadata), for progress totals."""
+    import imageio.v2 as imageio
+    rdr = imageio.get_reader(str(video_path), "ffmpeg")
+    meta = rdr.get_meta_data()
+    fps = meta.get("fps", 25) or 25
+    nfr = max(1, int(fps * (meta.get("duration", 0) or 0)))
+    rdr.close()
+    stride = max(1, int(fps * stride_sec))
+    c, start = 0, 0
+    while True:
+        c += 1
+        start += stride
+        if start >= nfr:
+            break
+    return c
+
+
+def run_videos(video_paths, context=None, on_update=None, on_done=None,
+               interval=None, window_sec=1.6, stride_sec=3.0, k=4):
+    """Closed loop over one OR MANY video clips, as a single shift (multi-camera).
+    Each sliding window is judged TEMPORALLY (motion / behaviour over ~window_sec),
+    dispatched, and accumulated into one handoff. The agent actually 'watches' the
+    footage instead of isolated stills."""
     from vlm_judge import judge_clip
     from PIL import Image
     import numpy as np
 
+    paths = [Path(p) for p in video_paths]
     context = context or VIDEO_CONTEXT
     interval = config.FRAME_INTERVAL_SEC if interval is None else interval
     problems = config.check()
@@ -144,34 +164,38 @@ def run_video(video_path, context=None, on_update=None, on_done=None,
 
     policy = config.load_policy()
     report = ShiftReport(context=context)
-    name = Path(video_path).stem
-    windows = sample_windows(video_path, window_sec, stride_sec, k)
-    print(f"=== SafetyCommander · VIDEO {name} · {len(windows)} windows · {report.shift_id} ===")
+    total = sum(_count_windows(p, window_sec, stride_sec) for p in paths)
+    print(f"=== SafetyCommander · VIDEO shift · {len(paths)} clip(s) · "
+          f"{total} windows · {report.shift_id} ===")
 
-    for i, (t, frames, rep) in enumerate(windows, 1):
-        if not frames:
-            continue
-        label = f"{name} @ {int(t)}s"
-        print(f"\n[{i}/{len(windows)}] {label}  ({len(frames)} frames)")
-        judgment = judge_clip(frames, policy, context, window_sec=window_sec, label=label)
-        judgment.setdefault("timestamp", datetime.now().isoformat(timespec="seconds"))
-        print(f"  👁️  {str(judgment.get('risk_level','?')).upper():8} "
-              f"{judgment.get('hazard_type')} | clause: {str(judgment.get('policy_clause'))[:60]}")
+    idx = 0
+    for p in paths:
+        name = p.stem
+        for (t, frames, rep) in sample_windows(p, window_sec, stride_sec, k):
+            if not frames:
+                continue
+            idx += 1
+            label = f"{name} @ {int(t)}s"
+            print(f"\n[{idx}/{total}] {label}  ({len(frames)} frames)")
+            judgment = judge_clip(frames, policy, context, window_sec=window_sec, label=label)
+            judgment.setdefault("timestamp", datetime.now().isoformat(timespec="seconds"))
+            print(f"  👁️  {str(judgment.get('risk_level','?')).upper():8} "
+                  f"{judgment.get('hazard_type')} | clause: {str(judgment.get('policy_clause'))[:60]}")
 
-        rep_name = None
-        if rep is not None:
-            rep_name = f"_live_{name}_{i:03d}.jpg"   # transient (git-ignored)
-            Image.fromarray(np.asarray(rep)).convert("RGB").save(
-                config.ANNOTATED_DIR / rep_name, "JPEG", quality=85)
+            rep_name = None
+            if rep is not None:
+                rep_name = f"_live_{name}_{idx:03d}.jpg"   # transient (git-ignored)
+                Image.fromarray(np.asarray(rep)).convert("RGB").save(
+                    config.ANNOTATED_DIR / rep_name, "JPEG", quality=85)
 
-        actions = dispatch(judgment)
-        report.add(judgment, actions)
-        if on_update:
-            on_update({"index": i, "total": len(windows), "frame": rep_name or label,
-                       "annotated": rep_name, "judgment": judgment,
-                       "actions": actions, "report": report})
-        if interval and i < len(windows):
-            time.sleep(interval)
+            actions = dispatch(judgment)
+            report.add(judgment, actions)
+            if on_update:
+                on_update({"index": idx, "total": total, "frame": rep_name or label,
+                           "annotated": rep_name, "judgment": judgment,
+                           "actions": actions, "report": report})
+            if interval and idx < total:
+                time.sleep(interval)
 
     path = report.save()
     print(f"\n=== Video shift complete. Handoff saved to: {path} ===")
@@ -180,11 +204,20 @@ def run_video(video_path, context=None, on_update=None, on_done=None,
     return report
 
 
+def run_video(video_path, **kwargs):
+    """Single-clip convenience wrapper around run_videos()."""
+    return run_videos([video_path], **kwargs)
+
+
 if __name__ == "__main__":
     arg = sys.argv[1] if len(sys.argv) > 1 else None
-    if arg and Path(arg).suffix.lower() in VIDEO_EXT:
-        report = run_video(arg)
+    p = Path(arg) if arg else None
+    if p and p.is_dir() and any(q.suffix.lower() in VIDEO_EXT for q in p.iterdir()):
+        clips = sorted(str(q) for q in p.iterdir() if q.suffix.lower() in VIDEO_EXT)
+        report = run_videos(clips)                 # multi-camera video shift
+    elif p and p.suffix.lower() in VIDEO_EXT:
+        report = run_video(arg)                     # single clip, temporal
     else:
-        report = run_shift(arg)
+        report = run_shift(arg)                     # static frames
     print("\n" + "=" * 72)
     print(report.generate_handoff())

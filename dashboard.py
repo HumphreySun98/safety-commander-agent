@@ -16,7 +16,7 @@ from pathlib import Path
 from flask import Flask, jsonify, send_from_directory, Response
 
 import config
-from main import run_shift, run_video, DEFAULT_CONTEXT, VIDEO_CONTEXT
+from main import run_shift, run_video, run_videos, DEFAULT_CONTEXT, VIDEO_CONTEXT, VIDEO_EXT
 
 app = Flask(__name__)
 
@@ -63,11 +63,16 @@ def _on_done(report):
 
 def _run():
     try:
-        video = os.getenv("SC_VIDEO")          # set SC_VIDEO=path/clip.mp4 for video mode
+        video = os.getenv("SC_VIDEO")          # SC_VIDEO=clip.mp4 (or a folder of clips)
         if video:
             with _state_lock:
                 STATE["context"] = VIDEO_CONTEXT
-            run_video(video, context=VIDEO_CONTEXT, on_update=_on_update, on_done=_on_done)
+            vp = Path(video)
+            if vp.is_dir():
+                clips = sorted(str(q) for q in vp.iterdir() if q.suffix.lower() in VIDEO_EXT)
+                run_videos(clips, context=VIDEO_CONTEXT, on_update=_on_update, on_done=_on_done)
+            else:
+                run_video(video, context=VIDEO_CONTEXT, on_update=_on_update, on_done=_on_done)
         else:
             run_shift(context=STATE["context"], on_update=_on_update, on_done=_on_done)
     except Exception as e:
