@@ -81,6 +81,13 @@ def generate_rollup(period="all logged shifts") -> str:
     L.append(f"- **Critical incidents:** {crit}")
     L.append(f"- **Open corrective actions (backlog):** {len(open_ca)}")
 
+    L.append("\n## Indicators (industry framing)")
+    L.append(f"- **Leading:** near-misses reported = {near_miss} (rising = stronger reporting "
+             f"culture → fewer recordables); violation rate {rate:.0f}%; corrective-action "
+             f"backlog {len(open_ca)} (industry target: ≥85% closed on time, ~30-day resolution).")
+    L.append(f"- **Lagging:** critical incidents = {crit}. (TRIR/DART need hours-worked + "
+             f"recordable counts — outside this demo dataset; the framework is ready to compute them.)")
+
     L.append("\n## By risk level")
     for lvl in ("critical", "high", "medium", "low", "none"):
         if by_level.get(lvl):

@@ -11,6 +11,7 @@ schedule. This covers the Role-01 WEEK tasks (scheduled inspections + training).
 """
 import config
 import kpi_report
+import rag
 from vlm_judge import _get_client, _extract_json
 
 SYSTEM = (
@@ -31,6 +32,13 @@ def generate_week_plan():
                        for c in ca[:12]) or "none"
     policy = config.load_policy()
 
+    # domain-targeted RAG: retrieve real industrial EHS cadences/KPIs to ground the plan
+    hz_words = " ".join(h for h, _ in s["by_hazard"][:4])
+    prac = rag.retrieve(
+        "safety inspection frequency schedule toolbox talk training cadence corrective "
+        f"action closure KPI leading lagging indicator {hz_words}", k=3)
+    practice = "\n".join(f"- [{c['source']}] {c['text'][:320].strip()}" for c in prac) or "none"
+
     user = (
         "THIS PERIOD'S SAFETY DATA (from the autonomous shift monitoring):\n"
         f"- observations: {s['observations']}, violations: {s['violations']}, "
@@ -39,7 +47,10 @@ def generate_week_plan():
         f"- hot zones (violations): {zones}\n"
         f"- open corrective actions:\n{ca_txt}\n\n"
         f"SITE POLICY (for clause references):\n{policy}\n\n"
-        "Plan NEXT WEEK's preventive actions that DIRECTLY target the data above. "
+        f"INDUSTRY EHS PRACTICE & STANDARDS (align cadence/owners/KPIs to these):\n{practice}\n\n"
+        "Plan NEXT WEEK's preventive actions that DIRECTLY target the data above, "
+        "using the real cadences above (e.g. daily forklift pre-shift checks, weekly "
+        "toolbox talks, operator re-eval, ~85% corrective-action closure target). "
         "Prioritise by frequency and severity; cover the open corrective actions. "
         "Output ONLY JSON, no prose:\n"
         '{ "week_of": "<e.g. Mon Jun 30>", "focus": "<one-line theme>", "items": [ '
