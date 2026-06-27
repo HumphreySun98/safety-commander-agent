@@ -183,6 +183,12 @@ def _format_user_text(policy_text, shift_context, perception=None, knowledge="")
         "unless a person is visibly there). If presence, proximity, or an action is "
         "ambiguous, choose the lower-severity reading and state the uncertainty in "
         "'reasoning'. Reserve 'critical' for a hazard to a person you can actually see.\n\n"
+        "PRIORITY OF EVIDENCE: (1) what you SEE decides whether a hazard exists; "
+        "(2) the SITE POLICY sets the risk tier; (3) RETRIEVED REGULATIONS are only for "
+        "citing the applicable standard once a hazard is already established. NEVER infer "
+        "a hazard from retrieved text alone — if the regulations mention a hazard you "
+        "cannot see in the frame, ignore it. If a retrieved regulation conflicts with the "
+        "site policy, follow the site policy and note the conflict.\n\n"
         "Now analyze the attached camera frame. Return ONLY the JSON object."
     )
 

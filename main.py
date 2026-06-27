@@ -15,22 +15,43 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+import os
+
 import config
-from vlm_judge import judge_frame
+from vlm_judge import judge_frame, judge_clip
 from actions import dispatch
 from shift_report import ShiftReport
 from perception import load_perception
-from rag import retrieve_text, sources
+import rag
+
+# Main loop is RAG-FREE by default (image + policy + perception). RAG is hazard-driven
+# and only enriches the citation once a hazard is already established. Turn on with SC_RAG=1.
+RAG_ENABLED = os.getenv("SC_RAG", "0") == "1"
 
 
-def _rag_query(context, perception=None, extra=""):
-    """Build a retrieval query from the zone/operations (+ YOLO labels if present)."""
-    ctx = context or {}
-    parts = [str(ctx.get("zone", "")), str(ctx.get("operations", "")), str(extra)]
-    if perception:
-        labels = sorted({d.get("label", "") for d in perception.get("detections", [])})
-        parts.append(" ".join(labels))
-    return " ".join(p for p in parts if p).strip()
+def _rag_enrich(judgment, frame_or_frames, policy, context, perception,
+                is_clip=False, window_sec=2.0, label=None):
+    """Hazard-driven, gated RAG. The visual pass already decided the hazard + risk tier;
+    here we ONLY retrieve the matching regulation and enrich the citation/reasoning.
+    The risk tier is never changed by retrieval — visual evidence owns the hazard."""
+    if not RAG_ENABLED:
+        return judgment
+    if not rag.should_use_rag(judgment.get("hazard_type"), judgment.get("risk_level")):
+        return judgment
+    chunks = rag.retrieve_for_hazard(judgment.get("hazard_type"), context.get("zone", ""))
+    if not chunks:
+        return judgment
+    kn = rag.format_for_prompt(chunks)
+    if is_clip:
+        j2 = judge_clip(frame_or_frames, policy, context, window_sec=window_sec,
+                        label=label, knowledge=kn)
+    else:
+        j2 = judge_frame(frame_or_frames, policy, context, perception=perception, knowledge=kn)
+    judgment["policy_clause"] = j2.get("policy_clause", judgment.get("policy_clause"))
+    judgment["reasoning"] = j2.get("reasoning", judgment.get("reasoning"))
+    judgment["retrieved"] = [c["source"] for c in chunks]
+    judgment["rag_used"] = True
+    return judgment
 
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
@@ -73,11 +94,9 @@ def run_shift(frames_dir=None, context=None, on_update=None, on_done=None, inter
     for i, frame in enumerate(frames, 1):
         print(f"\n[{i}/{len(frames)}] {frame.name}")
         perc = load_perception(frame.name)   # YOLO facts if the perception layer ran; else None
-        query = _rag_query(context, perc)
-        knowledge = retrieve_text(query, k=3)            # RAG: relevant OSHA / SOP / SDS
-        judgment = judge_frame(str(frame), policy, context, perception=perc, knowledge=knowledge)
+        judgment = judge_frame(str(frame), policy, context, perception=perc)   # visual + policy
         judgment.setdefault("timestamp", datetime.now().isoformat(timespec="seconds"))
-        judgment["retrieved"] = sources(query, k=3)
+        judgment = _rag_enrich(judgment, str(frame), policy, context, perc)    # cite reg if hazard
         print(f"  👁️  {str(judgment.get('risk_level','?')).upper():8} "
               f"{judgment.get('hazard_type')} | "
               f"clause: {str(judgment.get('policy_clause'))[:70]}")
@@ -165,7 +184,6 @@ def run_videos(video_paths, context=None, on_update=None, on_done=None,
     Each sliding window is judged TEMPORALLY (motion / behaviour over ~window_sec),
     dispatched, and accumulated into one handoff. The agent actually 'watches' the
     footage instead of isolated stills."""
-    from vlm_judge import judge_clip
     from PIL import Image
     import numpy as np
 
@@ -191,12 +209,10 @@ def run_videos(video_paths, context=None, on_update=None, on_done=None,
             idx += 1
             label = f"{name} @ {int(t)}s"
             print(f"\n[{idx}/{total}] {label}  ({len(frames)} frames)")
-            query = _rag_query(context)
-            knowledge = retrieve_text(query, k=3)        # RAG: relevant OSHA / SOP / SDS
-            judgment = judge_clip(frames, policy, context, window_sec=window_sec,
-                                  label=label, knowledge=knowledge)
+            judgment = judge_clip(frames, policy, context, window_sec=window_sec, label=label)
             judgment.setdefault("timestamp", datetime.now().isoformat(timespec="seconds"))
-            judgment["retrieved"] = sources(query, k=3)
+            judgment = _rag_enrich(judgment, frames, policy, context, None,
+                                   is_clip=True, window_sec=window_sec, label=label)
             print(f"  👁️  {str(judgment.get('risk_level','?')).upper():8} "
                   f"{judgment.get('hazard_type')} | clause: {str(judgment.get('policy_clause'))[:60]}")
 

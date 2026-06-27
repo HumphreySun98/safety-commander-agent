@@ -94,10 +94,104 @@ def sources(query, k=3):
     return [c["source"] for c in retrieve(query, k)]
 
 
+# ===========================================================================
+# HAZARD-DRIVEN retrieval (the redesign).
+#
+# RAG is NOT a perception aid. It runs ONLY after the VLM has already decided a
+# hazard exists from the image, and only for hazard types we have regulations for.
+# The query is built from the *hazard*, not the generic zone. A keyword relevance
+# gate then drops chunks that aren't about that hazard — so retrieved text can never
+# induce a hazard the model didn't see (no over-grounding / false HIGHs).
+# ===========================================================================
+
+HAZARD_QUERIES = {
+    "forklift_near_miss": [
+        "forklift pedestrian near miss travel path warehouse aisle",
+        "powered industrial truck pedestrian separation distance",
+        "forklift operator obstructed view pedestrian exposure",
+        "forklift load stability tiered load rated capacity",
+    ],
+    "ppe_violation": [
+        "hard hat head protection required production zone",
+        "high visibility vest powered industrial truck area",
+        "eye protection safety glasses grinding machining welding",
+    ],
+    "smoke_fire": [
+        "smoke fire emergency response evacuation factory",
+        "hot work welding cutting fire watch permit",
+        "fire extinguisher exit route unobstructed",
+    ],
+    "spill": [
+        "liquid spill slip hazard contain absorbent sign",
+        "chemical spill response SDS isolate area",
+    ],
+    "machine_guarding": [
+        "machine guarding point of operation running equipment",
+        "lockout tagout energized maintenance servicing",
+        "power press guard die area two-hand control",
+    ],
+}
+
+HAZARD_KEYWORDS = {
+    "forklift_near_miss": ["forklift", "powered industrial truck", "pedestrian", "travel",
+                           "aisle", "load", "truck"],
+    "ppe_violation": ["hard hat", "hardhat", "helmet", "vest", "head protection", "high-vis"],
+    "smoke_fire": ["smoke", "fire", "evacuation", "emergency", "hot work", "extinguisher"],
+    "spill": ["spill", "slip", "absorbent", "sds", "chemical"],
+    "machine_guarding": ["guard", "guarding", "lockout", "tagout", "loto",
+                         "point of operation", "press", "die"],
+}
+
+
+def map_hazard(hazard_type):
+    """Map the VLM's free-text hazard_type onto a RAG hazard class (or None)."""
+    h = (hazard_type or "").lower()
+    if any(w in h for w in ("forklift", "truck", "load", "aisle", "pedestrian", "obstruct")):
+        return "forklift_near_miss"
+    if any(w in h for w in ("hardhat", "hard_hat", "ppe", "vest", "glasses", "helmet", "eye")):
+        return "ppe_violation"
+    if any(w in h for w in ("smoke", "fire")):
+        return "smoke_fire"
+    if any(w in h for w in ("spill", "slip")):
+        return "spill"
+    if any(w in h for w in ("guard", "loto", "intervention", "machine", "press")):
+        return "machine_guarding"
+    return None
+
+
+def should_use_rag(hazard_type, risk_level):
+    """RAG fires only on a suspected, regulable hazard — never on safe frames."""
+    if risk_level not in ("medium", "high", "critical"):
+        return False
+    return map_hazard(hazard_type) is not None
+
+
+def relevant_enough(chunk_text, rag_hazard, min_hits=2):
+    """Keyword relevance gate: a chunk must clearly be about THIS hazard to be injected."""
+    t = chunk_text.lower()
+    keys = HAZARD_KEYWORDS.get(rag_hazard, [])
+    return sum(k in t for k in keys) >= min_hits
+
+
+def retrieve_for_hazard(hazard_type, zone="", k=2):
+    """Hazard-specific, relevance-gated retrieval. Returns [] when RAG shouldn't fire."""
+    rh = map_hazard(hazard_type)
+    if rh is None:
+        return []
+    picked = {}
+    for q in HAZARD_QUERIES[rh]:
+        for c in retrieve(f"{q} {zone}".strip(), k=4):
+            if not relevant_enough(c["text"], rh):
+                continue
+            key = (c["source"], c["text"][:48])
+            if key not in picked or c["score"] > picked[key]["score"]:
+                picked[key] = c
+    return sorted(picked.values(), key=lambda c: c["score"], reverse=True)[:k]
+
+
 if __name__ == "__main__":
     import sys
-    q = " ".join(sys.argv[1:]) or "forklift carrying a tall stack of bins blocking view"
-    print(f"query: {q}\n")
-    for c in retrieve(q, 3):
-        print(f"[{c['score']:.3f}] {c['source']}")
-        print("   " + c["text"][:160].replace("\n", " ") + "...\n")
+    hz = sys.argv[1] if len(sys.argv) > 1 else "forklift_pedestrian_proximity"
+    print(f"hazard_type: {hz}  ->  rag class: {map_hazard(hz)}\n")
+    for c in retrieve_for_hazard(hz, "warehouse aisle"):
+        print(f"[{c['score']:.3f}] {c['source']}\n   {c['text'][:150].strip()}...\n")
