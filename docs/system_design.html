@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>SafetyCommander — System Design</title>
+<style>
+  :root{
+    --bg:#0b0e13; --panel:#141923; --panel2:#1b2230; --line:#252d3b;
+    --txt:#e6eaf0; --muted:#8a94a6; --accent:#7c5cff; --accent2:#a99bff;
+    --none:#6b7280; --low:#22c55e; --med:#eab308; --high:#f97316; --crit:#ef4444;
+    --ok:#22c55e; --warn:#eab308; --bad:#ef4444;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);line-height:1.6;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px 80px}
+  header{padding:40px 22px 26px;border-bottom:1px solid var(--line);background:#0d1117;margin-bottom:8px}
+  header .inner{max-width:1080px;margin:0 auto}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:.3px}
+  h1 .b{color:var(--accent)}
+  .sub{color:var(--muted);font-size:15px}
+  h2{font-size:20px;margin:42px 0 12px;padding-top:10px;border-top:1px solid var(--line)}
+  h2 .n{color:var(--accent);font-variant-numeric:tabular-nums;margin-right:8px}
+  h3{font-size:15px;color:var(--accent2);margin:22px 0 8px;text-transform:uppercase;letter-spacing:.6px}
+  p{margin:8px 0}
+  code{background:var(--panel2);padding:1px 6px;border-radius:4px;font-size:13px;
+       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  pre{background:#0d1117;border:1px solid var(--line);border-radius:10px;padding:16px;overflow:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.5;color:#cfd6e2}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:18px 0}
+  .toc a{color:var(--accent2);text-decoration:none;font-size:14px}
+  .toc a:hover{text-decoration:underline}
+  .toc ol{margin:6px 0;padding-left:22px;columns:2}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:14px 0}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:.6px}
+  td code{font-size:12px}
+  .pill{display:inline-block;font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--muted)}
+  .pA{color:#a99bff;border-color:#3a2f6b;background:rgba(124,92,255,.12)}
+  .pB{color:#7fd1ff;border-color:#2a4a5e;background:rgba(80,180,255,.10)}
+  .tag-ok{color:var(--ok)} .tag-warn{color:var(--warn)} .tag-bad{color:var(--bad)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .card h4{margin:0 0 6px;font-size:14px}
+  .key{border-left:3px solid var(--accent);background:rgba(124,92,255,.08);border-radius:8px;padding:12px 16px;margin:14px 0}
+  .warnbox{border-left:3px solid var(--warn);background:rgba(234,179,8,.08);border-radius:8px;padding:12px 16px;margin:14px 0}
+  .lvl{font-weight:700;padding:1px 7px;border-radius:5px;color:#0b0e13;font-size:12px}
+  .l-none{background:var(--none)} .l-low{background:var(--low)} .l-med{background:var(--med)}
+  .l-high{background:var(--high)} .l-crit{background:var(--crit)}
+  ul{margin:8px 0;padding-left:20px} li{margin:4px 0}
+  .muted{color:var(--muted)}
+  .q{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:14px 18px;margin:14px 0}
+  .q .opt{margin:6px 0;padding:8px 12px;background:var(--panel2);border-radius:8px;border:1px solid var(--line)}
+  .rec{color:var(--ok);font-weight:600}
+  .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:50px;padding-top:18px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header><div class="inner">
+  <h1>🦺 SafetyCommander — <span class="b">System Design</span></h1>
+  <div class="sub">Autonomous factory safety-officer agent · Zapdos Labs hackathon · review draft</div>
+</div></header>
+
+<div class="wrap">
+
+<div class="toc">
+  <b>Contents</b>
+  <ol>
+    <li><a href="#s1">Problem &amp; goal</a></li>
+    <li><a href="#s2">Architecture (layers)</a></li>
+    <li><a href="#s3">Reasoning core (the VLM judge)</a></li>
+    <li><a href="#s4">The grounding stack</a></li>
+    <li><a href="#s5">Closed loop &amp; modes</a></li>
+    <li><a href="#s6">Component catalog</a></li>
+    <li><a href="#s7">Judgment lifecycle</a></li>
+    <li><a href="#s8">RAG subsystem (redesigned)</a></li>
+    <li><a href="#s9">Design invariants</a></li>
+    <li><a href="#s10">Tech stack &amp; repo</a></li>
+    <li><a href="#s11">Team split &amp; contract</a></li>
+    <li><a href="#s12">Open decisions (review me)</a></li>
+  </ol>
+</div>
+
+<!-- 1 -->
+<h2 id="s1"><span class="n">01</span>Problem &amp; goal</h2>
+<p>Take over the <b>floor-watch slice</b> of the safety officer (Role 01): continuously watch the
+floor, judge hazards against the site's rules, act, and hand a report to the next shift —
+autonomously. <span class="muted">Scope is deliberately narrowed: this is an
+<b>autonomous safety-monitor + shift handoff</b>, not the whole role (permits/sign-offs,
+training, KPI rollups, environmental records, JHAs are out of scope). Pitch it as exactly that.</span></p>
+<div class="grid">
+  <div class="card"><h4>The 3 "agent" pillars (demo must show all)</h4>
+    <ul><li><b>Reasoning model</b> — a frontier model does the thinking, not regex/if-then.</li>
+    <li><b>Workflow tools</b> — safety log, supervisor notify, corrective actions, escalation, handoff.</li>
+    <li><b>Autonomous</b> — runs watch→decide→act→report on its own.</li></ul></div>
+  <div class="card"><h4>The 4 judging questions</h4>
+    <ul><li>Real operational problem?</li>
+    <li><b>Is the <i>model</i> reasoning, or the developer? Hardcoded rules don't count.</b></li>
+    <li>Believable, feasible end-to-end?</li>
+    <li>Would you show it to an ops manager?</li></ul></div>
+</div>
+<div class="key"><b>North-star invariant:</b> the <b>VLM</b> decides the risk level by reading the
+written policy (+ retrieved regs + detector facts). No code path maps a hazard to a risk
+level. This is the whole differentiator (judging #2).</div>
+
+<!-- 2 -->
+<h2 id="s2"><span class="n">02</span>Architecture (layers)</h2>
+<pre>
+                          ┌──────────────────────────────────────────────┐
+  INPUTS                  │                 REASONING                     │     OUTPUTS
+                          │                                              │
+  frames/  ───┐           │   ┌────────────────────────────────────┐     │   logs/*.json
+  video    ───┼──WATCH──► │   │  vlm_judge  (Qwen3-VL, OpenAI API)  │     │   (safety log,
+  (clips)     │           │   │  judge_frame() / judge_clip()       │ ──► │    correctives,
+              │           │   │  -> {observation, hazard_type,      │ ACT │    incidents)
+              │  GROUNDING│   │      risk_level, policy_clause,      │     │
+              │  3 layers ├──►│      reasoning, recommended_actions} │     │   reports/
+              │           │   └───────────────▲────────────────────┘     │   handoff_*.md
+              │           │                    │                          │
+   ┌──────────┴─────────┐ │   ┌────────────────┴───────────────┐         │   dashboard
+   │ ① perception (YOLO)│ │   │ ② RAG          ③ policy         │         │   (live, big screen)
+   │   facts: people,   │ │   │  knowledge/    safety_policy.txt│         │
+   │   forklift, dist,  │ │   │  OSHA/SOP/SDS  (editable rules) │         │
+   │   ppe, fire…       │ │   │  TF-IDF        risk classes     │         │
+   └────────────────────┘ │   └────────────────────────────────┘         │
+        [B · 4090]        │            [A · agent layer]                  │
+                          └──────────────────────────────────────────────┘
+        ▲ measurements only        ▲ knowledge only        ▲ rules only
+        └──────────── none of these three decides risk — the VLM does ───────────┘
+
+   dispatch(risk_level) -> actions      ShiftReport.accumulate -> handoff      human edits policy ⟲
+</pre>
+
+<!-- 3 -->
+<h2 id="s3"><span class="n">03</span>Reasoning core — the VLM judge</h2>
+<p><code>vlm_judge.py</code> is the only place a verdict is formed. It builds one prompt from
+four parts and calls the shared Qwen3-VL endpoint (OpenAI-compatible).</p>
+<table>
+<tr><th>Prompt part</th><th>Source</th><th>Role</th></tr>
+<tr><td>System prompt</td><td>constant</td><td>"You are a safety officer; reason from the policy; cite the clause; output JSON."</td></tr>
+<tr><td>SAFETY POLICY</td><td><code>safety_policy.txt</code></td><td>the editable house rules (full text, in-context)</td></tr>
+<tr><td>RETRIEVED REGS</td><td><code>rag.py</code> → <code>knowledge/</code></td><td>OSHA/SOP/SDS chunks relevant to the scene</td></tr>
+<tr><td>DETECTOR FACTS</td><td><code>perception/&lt;frame&gt;.json</code></td><td>YOLO measurements (counts, distance, PPE)</td></tr>
+<tr><td>SHIFT CONTEXT + image(s)</td><td>orchestrator</td><td>zone/ops + base64 frame(s)</td></tr>
+</table>
+<p>Hardening: tolerant JSON parse + JSON-mode fallback; a <b>grounding</b> instruction (only
+assert what's visible → no hallucinated criticals); <code>temperature=0</code> (reproducible).</p>
+<pre>{
+  "observation": "...", "hazard_type": "forklift_obstructed_view",
+  "risk_level": "none|low|medium|high|critical",
+  "policy_clause": "2.x / OSHA 1910.178(n)(6) / SOP-FK-01 ...",
+  "reasoning": "...", "recommended_actions": ["..."]
+}</pre>
+
+<!-- 4 -->
+<h2 id="s4"><span class="n">04</span>The grounding stack (the core idea)</h2>
+<p>Three independent layers feed the judge. Each supplies a <i>different kind</i> of input;
+<b>none decides risk</b>.</p>
+<table>
+<tr><th>Layer</th><th>Supplies</th><th>Owner</th><th>Optional?</th></tr>
+<tr><td>① Perception (YOLO)</td><td><b>measurements</b> — person/forklift counts, person↔forklift distance (m), PPE-missing, fire/smoke/spill/phone bools</td><td><span class="pill pB">B</span></td><td>yes → no-op if absent</td></tr>
+<tr><td>② RAG (retrieval)</td><td><b>knowledge</b> — the specific OSHA standard / plant SOP / SDS for the scene</td><td><span class="pill pA">A</span></td><td>yes → no-op if empty / <code>SC_RAG=0</code></td></tr>
+<tr><td>③ Policy</td><td><b>rules</b> — the site's editable risk classification &amp; clauses</td><td><span class="pill pA">A</span></td><td>required</td></tr>
+</table>
+<div class="key">This mirrors how a real safety officer thinks: <b>see</b> (perception) → <b>consult the
+rulebook + regulations</b> (policy + RAG) → <b>judge</b> (VLM). It also matches the literature
+(Bi-stage RAG + visual-LLM for safety compliance).</div>
+
+<!-- 5 -->
+<h2 id="s5"><span class="n">05</span>Closed loop &amp; modes</h2>
+<pre>
+  ┌─────────────── one shift, autonomous ───────────────┐
+  │  WATCH   read next frame / video window              │
+  │  DECIDE  retrieve regs + load facts → VLM judge      │
+  │  ACT     dispatch(risk_level) → guarded actions      │
+  │  REPORT  accumulate → markdown handoff               │
+  └──────────────── next frame/window ⟲ ────────────────┘
+       persists logs · report hands to next shift · human edits policy ⟲ (feedback)
+</pre>
+<table>
+<tr><th>Mode</th><th>Entry</th><th>What it does</th></tr>
+<tr><td>Static frames</td><td><code>run_shift()</code></td><td>single-frame judging over <code>frames/</code></td></tr>
+<tr><td>Video (temporal)</td><td><code>run_video()</code></td><td>sliding window → <code>judge_clip()</code> reasons over motion (near-miss, tilt, approach)</td></tr>
+<tr><td>Multi-camera</td><td><code>run_videos()</code></td><td>many clips → one consolidated shift handoff</td></tr>
+<tr><td>Policy-flip climax</td><td><code>demo_policy_flip.py</code></td><td>same frame, +1 policy line → verdict flips (RAG-free, deterministic)</td></tr>
+</table>
+
+<!-- 6 -->
+<h2 id="s6"><span class="n">06</span>Component catalog</h2>
+<table>
+<tr><th>Module</th><th>Responsibility</th><th>Owner</th></tr>
+<tr><td><code>config.py</code></td><td>env, paths, policy loader, dir wiring</td><td><span class="pill pA">A</span></td></tr>
+<tr><td><code>safety_policy.txt</code></td><td>editable rules + risk classification none→critical</td><td><span class="pill pA">A</span></td></tr>
+<tr><td><code>knowledge/</code> + <code>rag.py</code></td><td>OSHA/SOP/SDS corpus + TF-IDF retrieval</td><td><span class="pill pA">A</span></td></tr>
+<tr><td><code>vlm_judge.py</code></td><td><b>the brain</b> — judge_frame / judge_clip</td><td><span class="pill pA">A</span></td></tr>
+<tr><td><code>actions.py</code></td><td>guarded actions + <code>dispatch()</code> routing</td><td><span class="pill pA">A</span></td></tr>
+<tr><td><code>shift_report.py</code></td><td>accumulate → markdown handoff</td><td><span class="pill pA">A</span></td></tr>
+<tr><td><code>main.py</code></td><td>orchestration: run_shift / run_video(s)</td><td><span class="pill pA">A</span></td></tr>
+<tr><td><code>dashboard.py</code> + <code>templates/</code></td><td>Flask live UI, video mode, RAG/box overlays</td><td><span class="pill pA">A</span></td></tr>
+<tr><td><code>perception.py</code></td><td>YOLO registry → facts (no risk logic)</td><td><span class="pill pB">B</span></td></tr>
+<tr><td><code>perception/*.json</code>, <code>frames_annotated/</code></td><td>per-frame facts + boxed frames</td><td><span class="pill pB">B</span></td></tr>
+<tr><td><code>train_forklift.py</code>, <code>weights/</code></td><td>4090 fine-tune of detector weights</td><td><span class="pill pB">B</span></td></tr>
+</table>
+
+<!-- 7 -->
+<h2 id="s7"><span class="n">07</span>Judgment lifecycle (one frame/window)</h2>
+<pre>
+  frame ──► load_perception(frame)            ──► DETECTOR FACTS  (facts, may be None)
+        ──► _rag_query(zone, ops, det-labels) ──► rag.retrieve()  ──► RETRIEVED REGS
+        ──► load_policy()                     ──► SAFETY POLICY
+        └─► judge_frame/clip(image, policy, perception, knowledge)
+                 │  Qwen3-VL (temp 0, JSON)
+                 ▼
+            judgment{risk_level, policy_clause, reasoning, ...}
+                 │
+            dispatch(risk_level):  none→log · low→log · medium→log+notify+corrective
+                                   high→escalate(near-miss)+notify · critical→+flag area
+                 ▼
+            logs/*.json  ·  ShiftReport.add()  ·  dashboard on_update
+</pre>
+
+<!-- 8 -->
+<h2 id="s8"><span class="n">08</span>RAG subsystem — redesigned (hazard-driven, citation-only)</h2>
+<div class="warnbox"><b>What was wrong (v1, measured A/B n=8):</b> a generic <code>zone+ops</code> query
+ran every frame and injected top-3 above a 0.02 threshold → it always pulled the same broad SOP,
+and the retrieved text <b>induced hazards the model couldn't see</b> (verdict changed in 7/8,
+mostly false HIGHs). Root cause: query not scene-specific, and RAG ran <i>before</i> the judgment.</div>
+<div class="key"><b>Redesign principle:</b> RAG is <b>not</b> a perception aid. Visual evidence decides
+whether a hazard exists; RAG only answers "<i>which regulation does this already-seen hazard map to,
+and what do we cite in the incident log?</i>" — <b>auditability, not detection.</b></div>
+
+<h3>New flow — visual first, hazard-driven, gated, citation-only</h3>
+<pre>
+  frame ─► PASS 1: judge(image + site policy + YOLO facts)  ──► hazard_type + risk tier
+                                                                  │
+        should_use_rag(hazard, risk)?  (risk ≥ medium  AND  a regulable hazard)
+                                                                  │ yes
+        build HAZARD-SPECIFIC queries (forklift_near_miss / ppe / smoke_fire / spill / guarding)
+                                                                  │
+        retrieve ─► relevance gate (≥2 hazard keywords/chunk) ─► ≤2 on-topic clauses
+                                                                  │
+        PASS 2: re-judge with regs ──► enrich CITATION + reasoning ONLY
+                                       (risk tier from PASS 1 is KEPT — never changed by RAG)
+  safe frame (none/low) ─────────────► no RAG at all (no 2nd call, no pollution)
+</pre>
+
+<h3>Three guards (<code>rag.py</code>)</h3>
+<table>
+<tr><th>Guard</th><th>What it does</th></tr>
+<tr><td><code>should_use_rag()</code></td><td>fires only when risk ≥ medium AND the hazard maps to a regulation class — safe frames never RAG</td></tr>
+<tr><td><code>build_queries()</code> per hazard</td><td>hazard-specific queries (forklift → pedestrian separation / obstructed view), not the generic zone</td></tr>
+<tr><td><code>relevant_enough()</code></td><td>keyword gate — a chunk needs ≥2 hazard keywords to be injected; drops off-topic regs (kills over-grounding)</td></tr>
+</table>
+
+<h3>Evidence priority (baked into the prompt)</h3>
+<pre>Visual evidence first  →  site policy second  →  retrieved regs third.
+Never infer a hazard from retrieved text. If a reg conflicts with site policy, follow the policy.</pre>
+
+<p class="rec">Result (verified): the risk tier is set by the visual pass and <b>RAG never changes it</b>
+(no more false HIGHs). RAG fires only on hazards — <code>forklift → OSHA 1910.178</code>,
+<code>hardhat → 1910.132/.135</code>, <code>safe → nothing</code>. Default off in the main loop
+(<code>SC_RAG=1</code> to enable); the policy-flip climax stays RAG-free. It pairs with B's
+distance fact: YOLO "<code>person @ 2.1 m</code>" → pass-1 near-miss → RAG cites 1910.178.</p>
+<p><b>Demo line:</b> "Once the agent <i>sees</i> a forklift near-miss, it retrieves the matching OSHA
+clause so the incident log explains, on the record, why the action was taken." — auditability, not accuracy.</p>
+
+<!-- 9 -->
+<h2 id="s9"><span class="n">09</span>Design invariants</h2>
+<table>
+<tr><th>Invariant</th><th>How it's enforced</th></tr>
+<tr><td><b>No hardcoded risk</b> (judging #2)</td><td>perception = measurements; rag = knowledge; dispatch = routing. Grep finds no <code>if hazard: risk=…</code>. The VLM is the only judge.</td></tr>
+<tr><td><b>Graceful degradation</b></td><td>perception absent → VLM-only; knowledge empty / <code>SC_RAG=0</code> → no-op. Each layer is optional.</td></tr>
+<tr><td><b>Determinism</b></td><td><code>temperature=0</code> → same frame, same verdict (demo-safe).</td></tr>
+<tr><td><b>Stability / fallback</b></td><td>pure-VLM path always runs; the policy-flip climax is RAG-free; <code>main</code> never broken by the enhancement layers.</td></tr>
+<tr><td><b>Clean A/B seam</b></td><td>one contract: <code>perception/&lt;frame&gt;.json</code> schema. A and B own disjoint files.</td></tr>
+</table>
+
+<!-- 10 -->
+<h2 id="s10"><span class="n">10</span>Tech stack &amp; repo</h2>
+<div class="grid">
+  <div class="card"><h4>Stack</h4><ul>
+    <li>Qwen3-VL-30B (OpenAI-compatible endpoint), <code>openai</code> client</li>
+    <li><code>scikit-learn</code> TF-IDF (RAG), no model download</li>
+    <li><code>ultralytics</code> YOLO on a 4090 (perception)</li>
+    <li><code>imageio-ffmpeg</code> (video decode, bundled ffmpeg)</li>
+    <li><code>flask</code> dashboard (Starlette/FastAPI broken in this env)</li>
+  </ul></div>
+  <div class="card"><h4>Demo data</h4><ul>
+    <li><code>frames/</code> — real Mendeley CCTV stills (CC BY 4.0)</li>
+    <li><code>demo_clips/</code> — 8 real clips, one per behaviour</li>
+    <li><code>knowledge/</code> — OSHA 1910.x + Plant-4 SOPs + SDS</li>
+    <li><code>frames_samples/</code> — Wikimedia escalation set</li>
+  </ul></div>
+</div>
+
+<!-- 11 -->
+<h2 id="s11"><span class="n">11</span>Team split &amp; contract</h2>
+<p><span class="pill pA">A</span> agent reasoning + RAG + orchestration + demo &nbsp;·&nbsp;
+   <span class="pill pB">B</span> perception (YOLO → facts) on the 4090.</p>
+<p>The only seam: <code>perception/&lt;frame&gt;.json</code> (schema = <code>perception.EXAMPLE</code>).
+B writes it; A's <code>load_perception()</code> reads it and folds <code>derived</code> facts into the
+prompt. Disjoint files → trunk-based, near-zero conflicts.</p>
+
+<!-- 12 -->
+<h2 id="s12"><span class="n">12</span>Open decisions — please review</h2>
+<div class="q">
+  <p><b>D1 · RAG query strategy</b> — <span class="rec">RESOLVED</span>: hazard-driven query + keyword
+     relevance gate + two-pass, citation-only. The visual pass owns the risk tier; RAG never changes it.</p>
+  <p><b>D2 · RAG scope</b> — <span class="rec">RESOLVED</span>: only on suspected hazards
+     (risk ≥ medium &amp; regulable). Safe frames get no RAG. Off by default (<code>SC_RAG=1</code>).</p>
+  <p><b>D3 · Scene signal source</b> — <span class="rec">RESOLVED</span>: PASS-1 <code>hazard_type</code>
+     drives retrieval (no extra caption call); B's forklift/PPE facts sharpen PASS 1.</p>
+  <p><b>D4 · Eval methodology</b> — <span class="tag-warn">OPEN</span>: small slide — 8 clips ×
+     {expected hazard, model risk, false positives, citation present, latency}. Do before demo.</p>
+  <p><b>D5 · Local-VLM fallback</b> (4090) — <span class="rec">ADOPTED</span>: Qwen2.5-VL-7B-Instruct
+     via vLLM OpenAI API; switch = one <code>.env</code> line. Break-glass only (rehearse/demo on the
+     30B endpoint); must validate it emits our JSON schema before trusting it.</p>
+  <p><b>D6 · RAG narrative</b> — <span class="rec">RESOLVED</span>: positioned as <b>auditability</b>
+     (cites OSHA on the hazard frame), not a blanket accuracy boost.</p>
+  <p class="muted">Still open for A: one real workflow integration (Slack) · the eval slide (D4) ·
+     the 3-minute script. Narrative discipline = pitch the narrowed scope (§1).</p>
+</div>
+
+<div class="foot">SafetyCommander · system design review draft · risk is reasoned by the VLM; perception measures, RAG retrieves, policy rules — none hardcodes risk.</div>
+</div>
+</body>
+</html>
