@@ -5,8 +5,16 @@ camera, reasons about risk **by reading the site's written safety policy**, take
 action that policy requires, routes the alert to the right worker, and rolls the shift up
 into reports and a forward-looking inspection/training plan.
 
-Built for **Zapdos Labs · AI Agents for the American Industrial Revolution** (Role 01 —
-Safety officer / EHS coordinator). Reasoning by **Qwen3-VL** served on vLLM.
+## Origin & status
+
+Built at the **Zapdos Labs × Antler** hackathon — *AI Agents for the American Industrial
+Revolution* (Role 01 — safety officer / EHS coordinator). [Antler](https://www.antler.co) is a
+global early-stage venture firm. The first working version shipped during the hackathon, and
+it has been in **active development since** — the YOLO perception layer, the two-role web app,
+the worker-notification inbox, and the WEEK/MONTH planning were all added after the initial build.
+
+**Stack:** Qwen3-VL served on **vLLM** (OpenAI-compatible) · **YOLO** perception ·
+**TF-IDF RAG** over an OSHA / SOP corpus · **Flask** web app.
 
 ---
 
@@ -67,6 +75,23 @@ LOOP / UI    main.py          the autonomous loop (headless; static frames or vi
 
 **Risk is decided in exactly one place — `vlm_judge.py`.** Everything else measures, routes,
 retrieves, or reports. That separation is the whole point.
+
+### Codebase map
+
+| File | Key entry points | Role |
+|---|---|---|
+| `vlm_judge.py` | `judge_frame()` · `judge_clip()` · `_format_user_text()` · `_extract_json()` | **THINK** — assembles the prompt (policy + retrieved regs + perception facts) and parses the VLM's structured verdict. **The only module that produces a risk level.** |
+| `actions.py` | `dispatch()` · `notify_supervisor()` · `_post_webhooks()` | **ACT** — routes the verdict's risk level to guarded actions (log/notify/corrective/escalate/Slack). No risk logic. |
+| `main.py` | `run_videos()` · `run_shift()` · `sample_windows()` · `_detect_remote()` | **LOOP** — slides over clips in temporal windows; per window calls judge → dispatch → report; optional remote-YOLO client. |
+| `perception.py` | `detect_for_frame()` · `compute_derived()` · `_nearest_person_forklift()` | **GROUND** — YOLO person/forklift + nearest distance; `FORKLIFT_CONF=0.8` to reject press-machine false fires. Facts only. |
+| `rag.py` | `retrieve_for_hazard()` · `should_use_rag()` · `relevant_enough()` | **GROUND** — TF-IDF over `knowledge/`; gated, citation-only (judge-time OSHA + plan-time cadence). |
+| `notify.py` | `route()` · `inbox()` · `set_state()` · `deliveries()` | routes alerts to worker inboxes by role/zone; tracks acknowledge/resolve/escalate. |
+| `kpi_report.py` | `summarize()` · `generate_rollup()` | **MONTH** roll-up (rates, leading/lagging, backlog). |
+| `planner.py` | `generate_week_plan()` · `render()` | **WEEK** AI inspection/training plan, grounded in retrieved cadence. |
+| `shift_report.py` | `ShiftReport.add()` · `generate_handoff()` | **REPORT** — accumulates events into the markdown handoff. |
+| `dashboard.py` | Flask routes + `/api/state·kpi·correctives·plan·inbox·deliveries·detect·clip` | the web app + JSON APIs; serves the four views. |
+| `demo_policy_flip.py` | — | the climax: judges `cam7_overload` under base policy vs base + clause 2.6. |
+| `safety_policy.txt` · `knowledge/` | — | the editable house rules + the OSHA 1910 / SOP / SDS corpus. |
 
 ---
 
