@@ -41,6 +41,27 @@ That makes it a real **agent**, not a chatbot: a reasoning model in a closed
 
 ---
 
+## Agent design for the factory floor
+
+SafetyCommander is designed around the constraints of a **regulated, safety-critical plant** —
+not a chat use-case. Those constraints drove the architecture:
+
+- **A fixed control loop, not an LLM planner.** The agent runs a deterministic
+  *sense → think → act → report* loop; the model is the **judgment inside** the loop, not an
+  orchestrator choosing its own actions. In a regulated plant you must be able to say *exactly*
+  what the agent will do — an autonomous planner picking its own action sequence is a non-starter.
+  (This is why it's deliberately **not** a ReAct / LangGraph-style planner.)
+- **One decision authority.** Exactly one module (`vlm_judge.py`) reasons about risk; everything
+  else is decision-free — perception *measures*, RAG *cites*, dispatch *routes*. Every decision
+  traces to one place.
+- **Grounded and defensible.** Each alert carries a measured fact (distance) and a cited
+  regulation (OSHA). An EHS alert that can't cite the rule is noise.
+- **Temporal, because hazards are behaviors.** Risk develops over time — a forklift entering a
+  walkway — so it reasons over short **video windows**, not single frames.
+- **Human-in-the-loop.** The agent **proposes**; a human confirms. The right authority for life-safety.
+- **Operational cadence.** DAY (live shift) · WEEK (inspection/training plan) · MONTH (KPI roll-up)
+  mirror how a plant's safety program actually runs.
+
 ## What it does — one agent, three horizons
 
 | Horizon | What the agent does |
