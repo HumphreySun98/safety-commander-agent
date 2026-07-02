@@ -1,9 +1,11 @@
 ---
 title: "SafetyCommander: an AI safety officer where the model reasons and the code never decides"
-published: false
+published: true
 tags: ai, llm, python, architecture
-canonical_url:
+canonical_url: https://dev.to/humphreysun98/safetycommander-an-ai-safety-officer-where-the-model-reasons-and-the-code-never-decides-4765
 ---
+
+> 📝 Published on dev.to → https://dev.to/humphreysun98/safetycommander-an-ai-safety-officer-where-the-model-reasons-and-the-code-never-decides-4765
 
 Every factory floor already has cameras. The problem is that nobody is watching them. A
 safety officer can't be on every camera, on every shift, on every floor — so the footage
